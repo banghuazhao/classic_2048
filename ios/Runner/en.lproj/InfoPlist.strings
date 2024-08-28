@@ -1,0 +1,9 @@
+/* 
+  InfoPlist.strings
+  Runner
+
+  Created by Lulin Y on 2022/2/18.
+  
+*/
+
+CFBundleDisplayName = "2048 Lover";
