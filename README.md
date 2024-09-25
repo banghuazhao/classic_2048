@@ -22,7 +22,10 @@ Classic 2048 is a mobile puzzle game inspired by the original 2048 game develope
 <img src="./images/game_play.webp" alt="iOS Screenshot" width="200">
 </p>
 
+## 🔧 Version Constraints
 
+- **Dart**: `>=3.0.0 <4.0.0`
+- **Flutter**: `>=3.10.0`
 
 ## 🎮 How to Play
 
