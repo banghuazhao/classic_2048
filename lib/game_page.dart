@@ -17,13 +17,16 @@ class GamePage extends StatelessWidget {
   int newNum;
   String bg;
 
-  GamePage({Key? key, required this.row, required this.newNum, required this.bg}) : super(key: key);
+  GamePage(
+      {Key? key, required this.row, required this.newNum, required this.bg})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    double safePadding = MediaQuery.of(context).padding.top + MediaQuery.of(context).padding.bottom;
+    double safePadding = MediaQuery.of(context).padding.top +
+        MediaQuery.of(context).padding.bottom;
     double widthFinal = width;
 
     double marginWidth = 10;
@@ -43,13 +46,16 @@ class GamePage extends StatelessWidget {
                 Navigator.pop(context);
               },
               icon: Icon(
+                color: Colors.white,
                 Icons.arrow_back_rounded,
               ),
             ),
             flexibleSpace: InkWell(
               onTap: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => GamePauseCoverPage(bg: bg)));
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => GamePauseCoverPage(bg: bg)));
               },
               child: Image(
                 image: AssetImage('assets/image/$bg.jpg'),
@@ -78,12 +84,15 @@ class GamePage extends StatelessWidget {
 
 class BoardGridWidget extends StatelessWidget {
   final _GameWidgetState _state;
+
   BoardGridWidget(this._state);
+
   @override
   Widget build(BuildContext context) {
     final boardSize = _state.boardSize();
     double width =
-        (boardSize.width - 20 - (_state.column + 1) * _state.cellPadding) / _state.column;
+        (boardSize.width - 20 - (_state.column + 1) * _state.cellPadding) /
+            _state.column;
     List<CellBox> _backgroundBox = <CellBox>[];
     for (int r = 0; r < _state.row; ++r) {
       for (int c = 0; c < _state.column; ++c) {
@@ -120,7 +129,8 @@ class GameWidget extends StatefulWidget {
   int row;
   int newNum;
 
-  GameWidget({Key? key, required this.row, required this.newNum}) : super(key: key);
+  GameWidget({Key? key, required this.row, required this.newNum})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -383,7 +393,9 @@ class _GameWidgetState extends State<GameWidget> {
                         Icons.casino_outlined,
                         color: Color(0xffFF9C76),
                       ),
-                      Text("Random", style: TextStyle(fontSize: 15, color: Color(0xffFF9C76))),
+                      Text("Random",
+                          style: TextStyle(
+                              fontSize: 15, color: Color(0xffFF9C76))),
                     ],
                   )),
               CupertinoButton(
@@ -398,7 +410,9 @@ class _GameWidgetState extends State<GameWidget> {
                         Icons.shuffle_rounded,
                         color: Color(0xffFF9C76),
                       ),
-                      Text("Shuffle", style: TextStyle(fontSize: 15, color: Color(0xffFF9C76))),
+                      Text("Shuffle",
+                          style: TextStyle(
+                              fontSize: 15, color: Color(0xffFF9C76))),
                     ],
                   )),
               CupertinoButton(
@@ -412,7 +426,9 @@ class _GameWidgetState extends State<GameWidget> {
                         Icons.refresh_rounded,
                         color: Color(0xffFF9C76),
                       ),
-                      Text("Restart", style: TextStyle(fontSize: 15, color: Color(0xffFF9C76))),
+                      Text("Restart",
+                          style: TextStyle(
+                              fontSize: 15, color: Color(0xffFF9C76))),
                     ],
                   )),
             ],
@@ -440,8 +456,12 @@ class _GameWidgetState extends State<GameWidget> {
 class AnimatedCellWidget extends AnimatedWidget {
   final BoardCell cell;
   final _GameWidgetState state;
+
   AnimatedCellWidget(
-      {Key? key, required this.cell, required this.state, required Animation<double> animation})
+      {Key? key,
+      required this.cell,
+      required this.state,
+      required Animation<double> animation})
       : super(key: key, listenable: animation);
 
   @override
@@ -449,7 +469,9 @@ class AnimatedCellWidget extends AnimatedWidget {
     final Animation<double> animation = listenable as Animation<double>;
     double animationValue = animation.value;
     Size boardSize = state.boardSize();
-    double width = (boardSize.width - 20 - (state.column + 1) * state.cellPadding) / state.column;
+    double width =
+        (boardSize.width - 20 - (state.column + 1) * state.cellPadding) /
+            state.column;
     var textColor = Colors.black.withOpacity(0.8);
     if ([4, 16, 64, 256, 1048].contains(cell.number)) {
       textColor = Colors.black.withOpacity(0.8);
@@ -458,8 +480,9 @@ class AnimatedCellWidget extends AnimatedWidget {
       return Container();
     } else {
       return CellBox(
-        left: (cell.column * width + 10 + state.cellPadding * (cell.column + 1)) +
-            width / 2 * (1 - animationValue),
+        left:
+            (cell.column * width + 10 + state.cellPadding * (cell.column + 1)) +
+                width / 2 * (1 - animationValue),
         top: cell.row * width +
             10 +
             state.cellPadding * (cell.row + 1) +
@@ -498,11 +521,14 @@ class AnimatedCellWidget extends AnimatedWidget {
 class CellWidget extends StatefulWidget {
   final BoardCell cell;
   final _GameWidgetState state;
+
   CellWidget({required this.cell, required this.state});
+
   _CellWidgetState createState() => _CellWidgetState();
 }
 
-class _CellWidgetState extends State<CellWidget> with SingleTickerProviderStateMixin {
+class _CellWidgetState extends State<CellWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController controller;
   late Animation<double> animation;
 
@@ -548,6 +574,7 @@ class CellBox extends StatelessWidget {
   final Color color;
   final double shadowOffset;
   Text? text;
+
   CellBox(
       {required this.left,
       required this.top,
@@ -581,8 +608,10 @@ class CellBox extends StatelessWidget {
                 ],
               ),
               child: Center(
-                  child:
-                      FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.center, child: text)),
+                  child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: text)),
             )
           : Container(
               width: size,
@@ -593,8 +622,10 @@ class CellBox extends StatelessWidget {
                 borderRadius: BorderRadius.all(Radius.circular(8.0)),
               ),
               child: Center(
-                  child:
-                      FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.center, child: text)),
+                  child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: text)),
             ),
     );
   }
