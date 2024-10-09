@@ -22,7 +22,8 @@ void main() {
 
   InAppReviewHelper.checkAndAskForReview();
 
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_) {
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then((_) {
     runApp(new MyApp());
   });
 }
@@ -112,9 +113,9 @@ class _GameChooseState extends State<GameChoose> {
 
     _ad.load();
 
-    _appLifecycleReactor =
-        AppLifecycleReactor(appOpenAdManager: _appOpenAdManager);
-    _appLifecycleReactor.listenToAppStateChanges();
+    AppOpenAdManager appOpenAdManager = AppOpenAdManager()..loadAd();
+    WidgetsBinding.instance!
+        .addObserver(AppLifecycleReactor(appOpenAdManager: appOpenAdManager));
   }
 
   @override
@@ -139,7 +140,9 @@ class _GameChooseState extends State<GameChoose> {
                           child: Text(
                             "2048",
                             style: TextStyle(
-                                color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold),
                           ),
                         )),
                     Container(
@@ -147,7 +150,9 @@ class _GameChooseState extends State<GameChoose> {
                         child: Text(
                           "Choose Game Mode",
                           style: TextStyle(
-                              fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
+                              fontSize: 24,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center,
                         )),
                     Container(
@@ -155,7 +160,9 @@ class _GameChooseState extends State<GameChoose> {
                         child: Text(
                           "Row × Column (new cell per move)",
                           style: TextStyle(
-                              fontSize: 18, color: Colors.white, fontWeight: FontWeight.w400),
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w400),
                           textAlign: TextAlign.center,
                         )),
                     SizedBox(
@@ -186,7 +193,8 @@ class _GameChooseState extends State<GameChoose> {
         ));
   }
 
-  Container _buildLevelButton(BuildContext context, int row, int newNum, String background) {
+  Container _buildLevelButton(
+      BuildContext context, int row, int newNum, String background) {
     return Container(
       margin: EdgeInsets.only(bottom: 28, left: 40, right: 40),
       height: 60,
@@ -209,9 +217,11 @@ class _GameChooseState extends State<GameChoose> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
           ),
           style: ButtonStyle(
+            foregroundColor: MaterialStateProperty.all(Color(0xFFFFFFFF)),
               backgroundColor: MaterialStateProperty.all(Color(0xff373C69)),
               shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)))),
+                  RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0)))),
         ),
       ),
     );

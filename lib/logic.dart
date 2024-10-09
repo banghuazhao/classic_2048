@@ -9,6 +9,7 @@ class Game {
   Game(this.row, this.column, this.newNum);
 
   late List<List<BoardCell>> _boardCells;
+
   void init() {
     _boardCells = <List<BoardCell>>[];
     for (int r = 0; r < row; ++r) {
@@ -89,7 +90,10 @@ class Game {
     for (int r = 0; r < row; ++r) {
       for (int c = 0; c < column; ++c) {
         BoardCell newBoardCell = BoardCell(
-            row: r, column: c, number: _boardCells[r][c].number, isNew: _boardCells[r][c].isNew);
+            row: r,
+            column: c,
+            number: _boardCells[r][c].number,
+            isNew: _boardCells[r][c].isNew);
         newBoardCell.isMerged = _boardCells[r][c].isMerged;
         arr.add(newBoardCell);
       }
@@ -185,7 +189,8 @@ class Game {
   }
 
   bool canMerge(BoardCell a, BoardCell b) {
-    return !b.isMerged && ((b.isEmpty() && !a.isEmpty()) || (!a.isEmpty() && a == b));
+    return !b.isMerged &&
+        ((b.isEmpty() && !a.isEmpty()) || (!a.isEmpty() && a == b));
   }
 
   void merge(BoardCell a, BoardCell b) {
@@ -252,7 +257,12 @@ class BoardCell {
   int number = 0;
   bool isMerged = false;
   bool isNew = false;
-  BoardCell({required this.row, required this.column, required this.number, required this.isNew});
+
+  BoardCell(
+      {required this.row,
+      required this.column,
+      required this.number,
+      required this.isNew});
 
   bool isEmpty() {
     return number == 0;
