@@ -34,10 +34,26 @@ Classic 2048 is a mobile puzzle game inspired by the original 2048 game develope
 3. **Aim for 2048**: Keep merging tiles until you create a tile with the number 2048.
 4. **Use Shuffle and Random**: If you're stuck, use the Shuffle or Random buttons to mix up the board.
 
+## 🧩 Game Logic
+
+The main game mechanics for Classic 2048 are implemented in the `Game` class, which controls the board's state, score, and tile movements. Here’s an overview of the core functions:
+
+- **`init()`**: Initializes the game board with empty cells, sets the score to zero, and places the starting tiles.
+- **`moveLeft()`, `moveRight()`, `moveUp()`, `moveDown()`**: Handles the movement of tiles in each respective direction. These methods merge tiles of the same value and shift them appropriately to create new tiles.
+- **`canMoveLeft()`, `canMoveRight()`, `canMoveUp()`, `canMoveDown()`**: Checks if a move in the specified direction is possible by identifying mergeable or empty adjacent cells.
+- **`mergeLeft()`, `mergeRight()`, `mergeUp()`, `mergeDown()`**: Merges tiles as they shift, combining them if they have the same value and are adjacent, then updates the score.
+- **`randomEmptyCell(int cnt)`**: Randomly places a new tile (2 or 4) on an empty cell after a move. The probability of spawning a 4 is set to 1/15.
+- **`isGameOver()`**: Determines if there are no possible moves left, indicating the game is over.
+- **`shuffle()`**: Randomizes the tiles on the board, adding an extra layer of challenge for players.
+- **`resetMergeStatus()`**: Resets the merge status of all cells on the board, preparing for the next move.
+
+The **`BoardCell`** class represents each tile on the grid, tracking its position, value, and whether it has recently merged. Together, these functions and classes enable smooth gameplay with responsive tile merging, movement, and scoring.
+
+
 ## 🤝 Contribution
 
 Feel free to fork this repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT [License](LICENSE).
