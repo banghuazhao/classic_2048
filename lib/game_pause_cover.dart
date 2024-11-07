@@ -30,12 +30,7 @@ class _GamePauseCoverPageState extends State<GamePauseCoverPage> {
       )),
     ]));
 
-    // var onDoubleTap = () {
-    //   print("单击退出当前暂停");
-    //   Navigator.pop(context);
-    // };
     var onTap = () {
-      // print("你单击有鸟用，双击啊");
       Navigator.pop(context);
     };
     return GestureDetector(

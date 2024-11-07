@@ -155,6 +155,8 @@ class AppOpenAdManager {
 class AppLifecycleReactor extends WidgetsBindingObserver {
   final AppOpenAdManager appOpenAdManager;
 
+  bool hasEnterBackground = false;
+
   AppLifecycleReactor({required this.appOpenAdManager});
 
   @override
@@ -162,8 +164,12 @@ class AppLifecycleReactor extends WidgetsBindingObserver {
     // Try to show an app open ad if the app is being resumed and
     // we're not already showing an app open ad.
     print("didChangeAppLifecycleState: $state");
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused) {
+      hasEnterBackground = true;
+    }
+    if (state == AppLifecycleState.resumed && hasEnterBackground) {
       appOpenAdManager.showAdIfAvailable();
+      hasEnterBackground = false;
     }
   }
 }
