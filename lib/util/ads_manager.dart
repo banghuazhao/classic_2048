@@ -58,7 +58,7 @@ class AdsManager {
         if (disableAllAdsForScreenshot) {
           return "";
         } else {
-          return 'ca-app-pub-3940256099942544/5662855259';
+          return 'ca-app-pub-3940256099942544/5575463023';
         }
       } else {
         // ios openAd ID
