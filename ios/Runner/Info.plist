@@ -24,6 +24,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>$(GAD_APPLICATION_IDENTIFIER)</string>
+	<key>AdMobBannerID</key>
+	<string>$(ADMOB_BANNER_ID)</string>
+	<key>AdMobAppOpenID</key>
+	<string>$(ADMOB_APPOPEN_ID)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>

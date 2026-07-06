@@ -27,9 +27,27 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-def AdMobAppId = localProperties.getProperty('AdMobAppId')
-if (AdMobAppId == null) {
-    AdMobAppId = 'ca-app-pub-3940256099942544~3347511713'
+def secretsProperties = new Properties()
+def secretsPropertiesFile = rootProject.file('secrets.properties')
+if (secretsPropertiesFile.exists()) {
+    secretsProperties.load(new FileInputStream(secretsPropertiesFile))
+}
+
+def isRelease = gradle.startParameter.taskNames.any { it.contains("Release") }
+
+// Default Test IDs
+def admobAppId = "ca-app-pub-3940256099942544~3347511713"
+def admobBannerId = "ca-app-pub-3940256099942544/6300978111"
+def admobAppOpenId = "ca-app-pub-3940256099942544/9257395921"
+
+if (isRelease) {
+    admobAppId = secretsProperties.getProperty('admob.app.id')
+    admobBannerId = secretsProperties.getProperty('admob.banner.id')
+    admobAppOpenId = secretsProperties.getProperty('admob.appopen.id')
+
+    if (!admobAppId || admobAppId.contains("XXXXX")) {
+        throw new GradleException("AdMob Production App ID missing in secrets.properties for release build.")
+    }
 }
 
 apply plugin: 'com.android.application'
@@ -59,7 +77,9 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
-        manifestPlaceholders = [AdMobAppId: AdMobAppId]
+        manifestPlaceholders = [AdMobAppId: admobAppId]
+        resValue "string", "admob_banner_id", admobBannerId
+        resValue "string", "admob_appopen_id", admobAppOpenId
     }
 
     signingConfigs {

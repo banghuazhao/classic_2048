@@ -1,4 +1,5 @@
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:classic_2048/config/ad_config.dart';
 import 'package:classic_2048/util/ads_manager.dart';
 import 'package:classic_2048/util/in_app_reviewer_helper.dart';
 import 'package:flutter/material.dart';
@@ -9,8 +10,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'game_page.dart';
 import 'generated/l10n.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await AdConfig.initialize();
 
   Future.delayed(const Duration(seconds: 1), () {
     AppTrackingTransparency.requestTrackingAuthorization();

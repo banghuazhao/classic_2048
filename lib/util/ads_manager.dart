@@ -1,77 +1,26 @@
 import 'dart:io';
 
-import 'package:classic_2048/secrets.dart';
+import 'package:classic_2048/config/ad_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdsManager {
   static bool disableAllAdsForScreenshot = false;
-  static String bannerAdUnitIdIOS = Secrets.bannerAdUnitIdAndroid;
-  static String openAdUnitIDIOS = Secrets.openAdUnitIDIOS;
-
-  static String bannerAdUnitIdAndroid = Secrets.bannerAdUnitIdAndroid;
-  static String openAdUnitIDAndroid = Secrets.openAdUnitIDAndroid;
 
   static String get bannerAdUnitId {
-    if (Platform.isAndroid) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return "ca-app-pub-3940256099942544/6300978111";
-        }
-      } else {
-        // android banner ID
-        return bannerAdUnitIdAndroid;
-      }
-    } else if (Platform.isIOS) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return "ca-app-pub-3940256099942544/2934735716";
-        }
-      } else {
-        // ios banner ID
-        return bannerAdUnitIdIOS;
-      }
-    } else {
-      throw new UnsupportedError("Unsupported platform");
-    }
+    if (disableAllAdsForScreenshot) return "";
+    return AdConfig.bannerAdUnitId;
   }
 
   static String get openAdUnitID {
-    if (Platform.isAndroid) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return 'ca-app-pub-3940256099942544/9257395921';
-        }
-      } else {
-        // android openAd ID
-        return openAdUnitIDAndroid;
-      }
-    } else if (Platform.isIOS) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return 'ca-app-pub-3940256099942544/5575463023';
-        }
-      } else {
-        // ios openAd ID
-        return openAdUnitIDIOS;
-      }
-    } else {
-      throw new UnsupportedError("Unsupported platform");
-    }
+    if (disableAllAdsForScreenshot) return "";
+    return AdConfig.appOpenAdUnitId;
   }
 
   static void debugPrintID() {
     print("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
-    // print("openAdUnitID: ${AdsManager.openAdUnitID}");
+    print("openAdUnitID: ${AdsManager.openAdUnitID}");
   }
 }
 

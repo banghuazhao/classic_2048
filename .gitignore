@@ -20,6 +20,13 @@
 # is commented out by default.
 #.vscode/
 
+# Secret files
+/lib/secrets.dart
+/lib/Secrets.dart
+/android/secrets.properties
+/ios/Runner/Secrets-Release.xcconfig
+/ios/Runner/Secret.xcconfig
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -49,5 +56,3 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
-
-/lib/Secrets.dart
