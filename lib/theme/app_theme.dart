@@ -111,7 +111,6 @@ class AppInsets {
   static const scoreRow = EdgeInsets.fromLTRB(20, 10, 20, 0);
   static const adContainer = EdgeInsets.fromLTRB(20, 0, 20, 0);
   static const adContainerGame = EdgeInsets.fromLTRB(20, 0, 20, 20);
-  static const button5 = EdgeInsets.all(5);
   static const cellH5 = EdgeInsets.symmetric(horizontal: 5);
 }
 

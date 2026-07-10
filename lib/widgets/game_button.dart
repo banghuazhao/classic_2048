@@ -6,12 +6,14 @@ class GameActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
+  final EdgeInsets padding;
 
   const GameActionButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
   });
 
   @override
@@ -60,15 +62,21 @@ class _GameActionButtonState extends State<GameActionButton>
             widget.onPressed();
           },
           onTapCancel: () => _controller.reverse(),
-          child: Padding(
-            padding: AppInsets.button5,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(widget.icon, color: AppColors.accent),
-                const SizedBox(height: 4),
-                Text(widget.label, style: AppTextStyles.actionButton),
-              ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: 48,
+              minHeight: 48,
+            ),
+            child: Container(
+              padding: widget.padding,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.icon, color: AppColors.accent, size: 24),
+                  const SizedBox(height: 4),
+                  Text(widget.label, style: AppTextStyles.actionButton),
+                ],
+              ),
             ),
           ),
         ),

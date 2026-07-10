@@ -42,12 +42,21 @@ class GamePage extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(barHeight),
         child: AppBar(
-          leading: IconButton(
-            onPressed: () => Navigator.pop(context),
-            tooltip: S.of(context).Back,
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
+          leading: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black26,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                tooltip: S.of(context).Back,
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
             flexibleSpace: InkWell(
@@ -296,9 +305,15 @@ class _GameWidgetState extends State<GameWidget> {
                   children: children,
                 ),
               )),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                10 + MediaQuery.of(context).padding.left,
+                12,
+                10 + MediaQuery.of(context).padding.right,
+                max(4, MediaQuery.of(context).padding.bottom)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
               GameActionButton(
                   icon: Icons.casino_outlined,
                   label: S.of(context).Random,
@@ -339,7 +354,8 @@ class _GameWidgetState extends State<GameWidget> {
                   onPressed: newGame),
             ],
           ),
-          const Spacer(),
+        ),
+        const Spacer(),
           const AdBanner(margin: AppInsets.adContainerGame),
         ],
       ),
@@ -421,7 +437,7 @@ class _CellWidgetState extends State<CellWidget>
   initState() {
     super.initState();
     controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
     animation = Tween(begin: 0.0, end: 1.0).animate(
@@ -532,32 +548,39 @@ class GameOverOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.darkOverlay,
-          borderRadius: AppRadii.board,
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(S.of(context).Game_Over,
-                  style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.white)),
-              const SizedBox(height: 12),
-              Text(S.of(context).Score + ": ${score}",
-                  style: const TextStyle(fontSize: 22, color: AppColors.white70)),
-              const SizedBox(height: 16),
-              Text(S.of(context).Game_Over_Message,
-                  style: const TextStyle(fontSize: 16, color: AppColors.white70)),
-              const SizedBox(height: 24),
-              PauseButton(
-                text: S.of(context).Restart,
-                onPressed: onRestart,
-              ),
-            ],
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {},
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.darkOverlay,
+            borderRadius: AppRadii.board,
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(S.of(context).Game_Over,
+                    style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white)),
+                const SizedBox(height: 12),
+                Text(S.of(context).Score + ": $score",
+                    style: const TextStyle(
+                        fontSize: 22, color: AppColors.white70)),
+                const SizedBox(height: 16),
+                Text(S.of(context).Game_Over_Message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 16, color: AppColors.white70)),
+                const SizedBox(height: 28),
+                PauseButton(
+                  text: S.of(context).Restart,
+                  onPressed: onRestart,
+                ),
+              ],
+            ),
           ),
         ),
       ),
