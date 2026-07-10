@@ -99,18 +99,14 @@ class Game {
       }
     }
 
-    print(arr.map((e) => e.number));
-
     arr.shuffle();
-
-    print(arr.map((e) => e.number));
 
     int i = 0;
     for (int r = 0; r < row; ++r) {
       for (int c = 0; c < column; ++c) {
         _boardCells[r][c].number = arr[i].number;
-        _boardCells[r][c].isMerged = arr[i].isMerged;
-        _boardCells[r][c].isNew = arr[i].isNew;
+        _boardCells[r][c].isMerged = false;
+        _boardCells[r][c].isNew = false;
         i = i + 1;
       }
     }

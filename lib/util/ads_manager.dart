@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:classic_2048/config/ad_config.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdsManager {
@@ -18,10 +15,6 @@ class AdsManager {
     return AdConfig.appOpenAdUnitId;
   }
 
-  static void debugPrintID() {
-    print("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
-    print("openAdUnitID: ${AdsManager.openAdUnitID}");
-  }
 }
 
 class AppOpenAdManager {

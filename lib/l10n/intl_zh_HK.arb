@@ -1,5 +1,12 @@
 {
   "Score" : "得分",
   "High_Score" : "最高得分",
-  "Game_Over" : "遊戲結束"
+  "Game_Over" : "遊戲結束",
+  "Random" : "隨機",
+  "Shuffle" : "洗牌",
+  "Restart" : "重新開始",
+  "Continue" : "繼續",
+  "Game_Over_Message" : "沒有可用的移動了！開始新遊戲？",
+  "Back" : "返回",
+  "Board_Cell" : "方塊 {value}"
 }

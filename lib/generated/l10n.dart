@@ -79,6 +79,76 @@ class S {
       args: [],
     );
   }
+
+  /// `Random`
+  String get Random {
+    return Intl.message(
+      'Random',
+      name: 'Random',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shuffle`
+  String get Shuffle {
+    return Intl.message(
+      'Shuffle',
+      name: 'Shuffle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Restart`
+  String get Restart {
+    return Intl.message(
+      'Restart',
+      name: 'Restart',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue`
+  String get Continue {
+    return Intl.message(
+      'Continue',
+      name: 'Continue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No more moves! Start a new game?`
+  String get Game_Over_Message {
+    return Intl.message(
+      'No more moves! Start a new game?',
+      name: 'Game_Over_Message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back`
+  String get Back {
+    return Intl.message(
+      'Back',
+      name: 'Back',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tile {value}`
+  String Board_Cell(Object value) {
+    return Intl.message(
+      'Tile $value',
+      name: 'Board_Cell',
+      desc: '',
+      args: [value],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

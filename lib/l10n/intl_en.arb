@@ -1,5 +1,12 @@
 {
   "Score" : "Score",
   "High_Score" : "High Score",
-  "Game_Over" : "Game Over"
+  "Game_Over" : "Game Over",
+  "Random" : "Random",
+  "Shuffle" : "Shuffle",
+  "Restart" : "Restart",
+  "Continue" : "Continue",
+  "Game_Over_Message" : "No more moves! Start a new game?",
+  "Back" : "Back",
+  "Board_Cell" : "Tile {value}"
 }

@@ -1,5 +1,12 @@
 {
   "Score" : "得分",
   "High_Score" : "最高得分",
-  "Game_Over" : "游戏结束"
+  "Game_Over" : "游戏结束",
+  "Random" : "随机",
+  "Shuffle" : "洗牌",
+  "Restart" : "重新开始",
+  "Continue" : "继续",
+  "Game_Over_Message" : "没有可用的移动了！开始新游戏？",
+  "Back" : "返回",
+  "Board_Cell" : "方块 {value}"
 }
