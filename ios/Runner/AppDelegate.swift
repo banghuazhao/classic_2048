@@ -1,30 +1,23 @@
-import UIKit
 import Flutter
+import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let adChannel = FlutterMethodChannel(name: "com.appsbay.classic_2048/ads",
-                                          binaryMessenger: controller.binaryMessenger)
-    adChannel.setMethodCallHandler({
-      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      if (call.method == "getAdUnitIds") {
-        let bannerId = Bundle.main.object(forInfoDictionaryKey: "AdMobBannerID") as? String ?? ""
-        let appOpenId = Bundle.main.object(forInfoDictionaryKey: "AdMobAppOpenID") as? String ?? ""
-        result([
-          "banner": bannerId,
-          "appOpen": appOpenId
-        ])
-      } else {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let adChannel = FlutterMethodChannel(
+      name: "com.appsbay.classic_2048/ads",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    adChannel.setMethodCallHandler { call, result in
+      guard call.method == "getAdUnitIds" else {
         result(FlutterMethodNotImplemented)
+        return
       }
-    })
-
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+      result([
+        "banner": Bundle.main.object(forInfoDictionaryKey: "AdMobBannerID") as? String ?? "",
+        "appOpen": Bundle.main.object(forInfoDictionaryKey: "AdMobAppOpenID") as? String ?? "",
+      ])
+    }
   }
 }

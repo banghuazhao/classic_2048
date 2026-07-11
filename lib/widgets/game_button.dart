@@ -1,80 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../theme/app_theme.dart';
 
-class GameActionButton extends StatefulWidget {
+class GameActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
-  final EdgeInsets padding;
 
   const GameActionButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
   });
 
   @override
-  State<GameActionButton> createState() => _GameActionButtonState();
-}
-
-class _GameActionButtonState extends State<GameActionButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scale = Tween(begin: 1.0, end: 0.93).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _scale,
-      builder: (context, child) => Transform.scale(
-        scale: _scale.value,
-        child: child,
-      ),
+    final game = GameTheme.of(context);
+    return Expanded(
       child: Semantics(
         button: true,
-        label: widget.label,
-        child: GestureDetector(
-          onTapDown: (_) => _controller.forward(),
-          onTapUp: (_) {
-            _controller.reverse();
+        label: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.control),
+          onTap: () {
             HapticFeedback.lightImpact();
-            widget.onPressed();
+            onPressed();
           },
-          onTapCancel: () => _controller.reverse(),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minWidth: 48,
-              minHeight: 48,
-            ),
-            child: Container(
-              padding: widget.padding,
+            constraints: const BoxConstraints(minHeight: 58),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(widget.icon, color: AppColors.accent, size: 24),
-                  const SizedBox(height: 4),
-                  Text(widget.label, style: AppTextStyles.actionButton),
+                  Icon(icon, color: game.accent),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: game.accent, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -85,149 +52,65 @@ class _GameActionButtonState extends State<GameActionButton>
   }
 }
 
-class PrimaryButton extends StatefulWidget {
+class PrimaryButton extends StatelessWidget {
   final String text;
+  final String? subtitle;
+  final IconData? icon;
   final VoidCallback onPressed;
 
-  const PrimaryButton({
-    super.key,
-    required this.text,
-    required this.onPressed,
-  });
+  const PrimaryButton(
+      {super.key,
+      required this.text,
+      this.subtitle,
+      this.icon,
+      required this.onPressed});
 
   @override
-  State<PrimaryButton> createState() => _PrimaryButtonState();
-}
-
-class _PrimaryButtonState extends State<PrimaryButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scale = Tween(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _scale,
-      builder: (context, child) => Transform.scale(
-        scale: _scale.value,
-        child: child,
-      ),
-      child: Semantics(
-        button: true,
-        label: widget.text,
-        child: GestureDetector(
-          onTapDown: (_) => _controller.forward(),
-          onTapUp: (_) {
-            _controller.reverse();
-            HapticFeedback.mediumImpact();
-            widget.onPressed();
-          },
-          onTapCancel: () => _controller.reverse(),
-          child: child,
+  Widget build(BuildContext context) => FilledButton.tonal(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          onPressed();
+        },
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          alignment: Alignment.centerLeft,
         ),
-      ),
-    );
-  }
-
-  Widget get child => Container(
-        height: 60,
-        margin: const EdgeInsets.only(bottom: 28, left: 40, right: 40),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.primaryDark,
-            borderRadius: AppRadii.levelButton,
+        child: Row(children: [
+          CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Icon(icon ?? Icons.grid_view_rounded),
           ),
-          child: Center(
-            child: Text(widget.text, style: AppTextStyles.levelButton),
-          ),
-        ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(text,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800)),
+                if (subtitle != null)
+                  Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+              ])),
+          const Icon(Icons.chevron_right_rounded),
+        ]),
       );
 }
 
-class PauseButton extends StatefulWidget {
+class PauseButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
-
-  const PauseButton({
-    super.key,
-    required this.text,
-    required this.onPressed,
-  });
+  const PauseButton({super.key, required this.text, required this.onPressed});
 
   @override
-  State<PauseButton> createState() => _PauseButtonState();
-}
-
-class _PauseButtonState extends State<PauseButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scale = Tween(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _scale,
-      builder: (context, child) => Transform.scale(
-        scale: _scale.value,
-        child: child,
-      ),
-      child: Semantics(
-        button: true,
-        label: widget.text,
-        child: GestureDetector(
-          onTapDown: (_) => _controller.forward(),
-          onTapUp: (_) {
-            _controller.reverse();
-            HapticFeedback.lightImpact();
-            widget.onPressed();
-          },
-          onTapCancel: () => _controller.reverse(),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              borderRadius: AppRadii.pauseButton,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-            child: Text(widget.text, style: AppTextStyles.pauseButton),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FilledButton.icon(
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
+        icon: const Icon(Icons.play_arrow_rounded),
+        label: Text(text),
+      );
 }

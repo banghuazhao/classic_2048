@@ -199,12 +199,17 @@ class Game {
 
     if (b.isEmpty()) {
       b.number = a.number;
+      b.id = a.id;
       a.number = 0;
+      a.id = BoardCell._nextId++;
     } else if (a == b) {
       b.number = b.number * 2;
       a.number = 0;
+      a.id = BoardCell._nextId++;
       score += b.number;
       b.isMerged = true;
+      b.isNew = true;
+      b.id = BoardCell._nextId++;
     } else {
       b.isMerged = true;
     }
@@ -249,6 +254,9 @@ class Game {
 }
 
 class BoardCell {
+  static int _nextId = 1;
+
+  int id;
   int row, column;
   int number = 0;
   bool isMerged = false;
@@ -258,7 +266,8 @@ class BoardCell {
       {required this.row,
       required this.column,
       required this.number,
-      required this.isNew});
+      required this.isNew})
+      : id = _nextId++;
 
   bool isEmpty() {
     return number == 0;

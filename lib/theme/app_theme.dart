@@ -1,138 +1,175 @@
 import 'package:flutter/material.dart';
 
-// ── Tile Colors ──
-const BoxColors = <int, Color>{
-  2: Color(0xffEEEEEE),
-  4: Color(0xffB6B6B6),
-  8: Color(0xffAAFFA2),
-  16: Color(0xff46EB36),
-  32: Color(0xff85BCF9),
-  64: Color(0xff2D88EC),
-  128: Color(0xffCA7EF9),
-  256: Color(0xff9800F7),
-  512: Color(0xffFAD17A),
-  1024: Color(0xffF9B222),
+class AppTheme {
+  AppTheme._();
+
+  static ThemeData light = _theme(Brightness.light);
+  static ThemeData dark = _theme(Brightness.dark);
+
+  static ThemeData _theme(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xff5B5F97),
+      brightness: brightness,
+      primary: dark ? const Color(0xffC3C5FF) : const Color(0xff4E538E),
+      secondary: dark ? const Color(0xffffb59c) : const Color(0xff9D452A),
+      surface: dark ? const Color(0xff161724) : const Color(0xffF8F7FF),
+    );
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: scheme.surface,
+      splashFactory: InkSparkle.splashFactory,
+    );
+    return base.copyWith(
+      textTheme: base.textTheme.copyWith(
+        displayLarge: base.textTheme.displayLarge?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -2,
+        ),
+        headlineMedium: base.textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.6,
+        ),
+        titleLarge: base.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        labelLarge: base.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.control),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(minimumSize: const Size.square(48)),
+      ),
+      extensions: <ThemeExtension<dynamic>>[
+        GameTheme(
+          board: dark ? const Color(0xff303655) : const Color(0xff465174),
+          boardBorder: dark ? const Color(0xff22263D) : const Color(0xff34415F),
+          emptyTile: Colors.white.withValues(alpha: dark ? 0.08 : 0.12),
+          accent: dark ? const Color(0xffffb59c) : const Color(0xffFF8F68),
+          scrim: Colors.black.withValues(alpha: 0.72),
+        ),
+      ],
+    );
+  }
+}
+
+@immutable
+class GameTheme extends ThemeExtension<GameTheme> {
+  final Color board;
+  final Color boardBorder;
+  final Color emptyTile;
+  final Color accent;
+  final Color scrim;
+
+  const GameTheme({
+    required this.board,
+    required this.boardBorder,
+    required this.emptyTile,
+    required this.accent,
+    required this.scrim,
+  });
+
+  static GameTheme of(BuildContext context) =>
+      Theme.of(context).extension<GameTheme>()!;
+
+  @override
+  GameTheme copyWith({
+    Color? board,
+    Color? boardBorder,
+    Color? emptyTile,
+    Color? accent,
+    Color? scrim,
+  }) =>
+      GameTheme(
+        board: board ?? this.board,
+        boardBorder: boardBorder ?? this.boardBorder,
+        emptyTile: emptyTile ?? this.emptyTile,
+        accent: accent ?? this.accent,
+        scrim: scrim ?? this.scrim,
+      );
+
+  @override
+  GameTheme lerp(covariant GameTheme? other, double t) {
+    if (other == null) return this;
+    return GameTheme(
+      board: Color.lerp(board, other.board, t)!,
+      boardBorder: Color.lerp(boardBorder, other.boardBorder, t)!,
+      emptyTile: Color.lerp(emptyTile, other.emptyTile, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
+    );
+  }
+}
+
+const tileColors = <int, Color>{
+  2: Color(0xffF2F1EE),
+  4: Color(0xffC9C8C2),
+  8: Color(0xffB7E7A9),
+  16: Color(0xff67D45A),
+  32: Color(0xff9BC7F5),
+  64: Color(0xff4B93DF),
+  128: Color(0xffD39AF5),
+  256: Color(0xffA74DDE),
+  512: Color(0xffF6D590),
+  1024: Color(0xffF4B943),
 };
 
-Color tileColor(int number) =>
-    BoxColors.containsKey(number) ? BoxColors[number]! : BoxColors[BoxColors.keys.last]!;
+Color tileColor(int number) => tileColors[number] ?? tileColors[1024]!;
+Color tileTextColor(int number) => Colors.black.withValues(alpha: 0.82);
+TextStyle tileTextStyle(BuildContext context, int number) =>
+    Theme.of(context).textTheme.displaySmall!.copyWith(
+          fontSize: number < 16
+              ? 40
+              : number < 128
+                  ? 36
+                  : number < 1024
+                      ? 32
+                      : 28,
+          fontWeight: FontWeight.w900,
+          color: tileTextColor(number),
+        );
 
-Color tileTextColor(int number) {
-  return Colors.black.withValues(alpha: 0.8);
+class AppSpacing {
+  AppSpacing._();
+  static const double xxs = 4, xs = 8, sm = 12, md = 16, lg = 24, xl = 32;
 }
 
-double tileFontSize(int number, double animationValue) {
-  final base = number < 16 ? 40 : number < 128 ? 36 : number < 1024 ? 32 : 28;
-  return base * animationValue;
-}
-
-// ── Palette ──
-class AppColors {
-  AppColors._();
-
-  static const background = Color(0xff47507C);
-  static const boardBorder = Color(0xff34415F);
-  static const boardBackground = Color(0xff4C5B7D);
-  static const primaryDark = Color(0xff373C69);
-  static const accent = Color(0xffFF9C76);
-  static const emptyTile = Color(0x1AFFFFFF);
-  static const darkOverlay = Color(0x80000000);
-
-  static const white = Colors.white;
-  static const white70 = Color(0xB3FFFFFF);
-  static const white50 = Color(0x80FFFFFF);
-  static const white10 = Color(0x1AFFFFFF);
-  static const black80 = Color(0xCC000000);
-  static const black50 = Color(0x80000000);
-}
-
-// ── Typography ──
-class AppTextStyles {
-  AppTextStyles._();
-
-  static const gameTitle = TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  );
-
-  static const modeSubtitle = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    color: Colors.white,
-  );
-
-  static const description = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w400,
-    color: Colors.white,
-  );
-
-  static const scoreLabel = TextStyle(
-    fontSize: 18,
-    color: Colors.white,
-  );
-
-  static const scoreValue = TextStyle(
-    fontSize: 21,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  );
-
-  static const levelButton = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    color: Colors.white,
-  );
-
-  static const actionButton = TextStyle(
-    fontSize: 15,
-    color: AppColors.accent,
-  );
-
-  static const pauseButton = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
-  );
-
-  static const gameOverToast = TextStyle(
-    fontSize: 16,
-    color: Colors.white,
-  );
-}
-
-// ── Spacing ──
 class AppInsets {
   AppInsets._();
-
-  static const sym20 = EdgeInsets.symmetric(horizontal: 20);
-  static const lr20 = EdgeInsets.fromLTRB(20, 0, 20, 0);
   static const scoreRow = EdgeInsets.fromLTRB(20, 10, 20, 0);
-  static const adContainer = EdgeInsets.fromLTRB(20, 0, 20, 0);
-  static const adContainerGame = EdgeInsets.fromLTRB(20, 0, 20, 20);
+  static const adContainerGame = EdgeInsets.fromLTRB(20, 0, 20, 12);
   static const cellH5 = EdgeInsets.symmetric(horizontal: 5);
 }
 
-// ── Border Radius ──
 class AppRadii {
   AppRadii._();
-
-  static const board = BorderRadius.all(Radius.circular(20));
-  static const tile = BorderRadius.all(Radius.circular(8));
-  static const levelButton = BorderRadius.all(Radius.circular(20));
-  static const pauseButton = BorderRadius.all(Radius.circular(30));
+  static const double control = 18;
+  static const board = BorderRadius.all(Radius.circular(24));
+  static const tile = BorderRadius.all(Radius.circular(10));
 }
 
-// ── Board Config ──
 class BoardConfig {
   BoardConfig._();
-
-  static const double boardBorderWidth = 10;
-
-  static double cellPadding(int row) =>
-      row == 4 ? 15 : row == 5 ? 10 : 8;
-
-  static double shadowOffset(int row) =>
-      row == 4 ? 2 : row == 5 ? 1.5 : 1;
+  static const double borderWidth = 10;
+  static double cellPadding(int row) => row == 4
+      ? 14
+      : row == 5
+          ? 10
+          : 8;
+  static double shadowOffset(int row) => row == 4
+      ? 2
+      : row == 5
+          ? 1.5
+          : 1;
 }

@@ -16,65 +16,33 @@ class GamePage extends StatelessWidget {
   final String bg;
 
   const GamePage({
-    Key? key,
+    super.key,
     required this.row,
     required this.newNum,
     required this.bg,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-    double safePadding = MediaQuery.of(context).padding.top +
-        MediaQuery.of(context).padding.bottom;
-    double widthFinal = width;
-
-    double marginWidth = 10;
-    if (width >= 600) {
-      marginWidth = max(width * 0.1, (width - 600) / 2);
-      widthFinal = width - marginWidth * 2 + 20;
-    }
-
-    double barHeight = max(height - widthFinal - safePadding - 160, 1);
-
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(barHeight),
-        child: AppBar(
-          leading: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black26,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                tooltip: S.of(context).Back,
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+      appBar: AppBar(
+        title: Text('$row × $row'),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          tooltip: S.of(context).Back,
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
+        actions: [
+          IconButton(
+            tooltip: S.of(context).Continue,
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => GamePauseCoverPage(bg: bg))),
+            icon: const Icon(Icons.pause_rounded),
           ),
-            flexibleSpace: InkWell(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => GamePauseCoverPage(bg: bg)));
-              },
-              child: Image(
-                image: AssetImage('assets/image/$bg.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: GameWidget(
         row: row,
         newNum: newNum,
@@ -83,19 +51,20 @@ class GamePage extends StatelessWidget {
   }
 }
 
-class BoardGridWidget extends StatelessWidget {
+class _BoardGridWidget extends StatelessWidget {
   final _GameWidgetState _state;
 
-  const BoardGridWidget(this._state);
+  const _BoardGridWidget(this._state);
 
   @override
   Widget build(BuildContext context) {
     final boardSize = _state.boardSize();
-    final b = BoardConfig.boardBorderWidth;
+    final b = BoardConfig.borderWidth;
+    final gameTheme = GameTheme.of(context);
     double width =
         (boardSize.width - b * 2 - (_state.column + 1) * _state.cellPadding) /
             _state.column;
-    List<CellBox> _backgroundBox = <CellBox>[];
+    final backgroundBoxes = <CellBox>[];
     for (int r = 0; r < _state.row; ++r) {
       for (int c = 0; c < _state.column; ++c) {
         CellBox box = CellBox(
@@ -103,10 +72,10 @@ class BoardGridWidget extends StatelessWidget {
           top: r * width + _state.cellPadding * (r + 1),
           size: width,
           shadowOffset: _state.shadowOffset,
-          color: AppColors.emptyTile,
+          color: gameTheme.emptyTile,
           text: null,
         );
-        _backgroundBox.add(box);
+        backgroundBoxes.add(box);
       }
     }
     return Positioned(
@@ -116,12 +85,12 @@ class BoardGridWidget extends StatelessWidget {
           width: _state.boardSize().width,
           height: _state.boardSize().height,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.boardBorder, width: b),
-            color: AppColors.boardBackground,
+            border: Border.all(color: gameTheme.boardBorder, width: b),
+            color: gameTheme.board,
             borderRadius: AppRadii.board,
           ),
           child: Stack(
-            children: _backgroundBox,
+            children: backgroundBoxes,
           ),
         ));
   }
@@ -131,8 +100,7 @@ class GameWidget extends StatefulWidget {
   final int row;
   final int newNum;
 
-  const GameWidget({Key? key, required this.row, required this.newNum})
-      : super(key: key);
+  const GameWidget({super.key, required this.row, required this.newNum});
 
   @override
   State<StatefulWidget> createState() {
@@ -142,13 +110,12 @@ class GameWidget extends StatefulWidget {
 
 class _GameWidgetState extends State<GameWidget> {
   late Game _game;
-  late MediaQueryData _queryData;
   int row = 4;
   int column = 4;
   int newNum = 1;
   double cellPadding = 10.0;
   double shadowOffset = 2;
-  EdgeInsets _gameMargin = EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 0.0);
+  double _boardExtent = 0;
   bool _isDragging = false;
   bool _isGameOver = false;
 
@@ -210,137 +177,50 @@ class _GameWidgetState extends State<GameWidget> {
 
   @override
   Widget build(BuildContext context) {
-    List<CellWidget> _cellWidgets = <CellWidget>[];
-    for (int r = 0; r < row; ++r) {
-      for (int c = 0; c < column; ++c) {
-        _cellWidgets.add(CellWidget(cell: _game.get(r, c), state: this));
-      }
-    }
-    _queryData = MediaQuery.of(context);
-
-    double width = _queryData.size.width;
-    double marginWidth = 10;
-    if (width >= 600) {
-      marginWidth = max(width * 0.1, (width - 600) / 2);
-    }
-    _gameMargin = EdgeInsets.fromLTRB(marginWidth, 0.0, marginWidth, 0.0);
-
-    List<Widget> children = <Widget>[];
-    children.add(BoardGridWidget(this));
-    children.addAll(_cellWidgets);
-    if (_isGameOver) {
-      children.add(GameOverOverlay(
-        score: _game.score,
-        onRestart: newGame,
-      ));
-    }
     return SafeArea(
-      child: Column(
-        children: <Widget>[
-          Container(
-              margin: AppInsets.scoreRow,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Container(
-                    height: 40.0,
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            S.of(context).Score + ": ",
-                            style: AppTextStyles.scoreLabel,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _game.score.toString(),
-                            style: AppTextStyles.scoreValue,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              )),
-          const SizedBox(height: 10),
-          Container(
-              margin: _gameMargin,
-              width: _queryData.size.width - _gameMargin.left * 2,
-              height: _queryData.size.width - _gameMargin.left * 2 + 10,
-              child: GestureDetector(
-                onVerticalDragUpdate: (detail) {
-                  if (detail.delta.distance == 0 || _isDragging) return;
-                  _isDragging = true;
-                  HapticFeedback.selectionClick();
-                  if (detail.delta.direction > 0) {
-                    moveDown();
-                  } else {
-                    moveUp();
-                  }
-                },
-                onVerticalDragEnd: (detail) {
-                  _isDragging = false;
-                },
-                onVerticalDragCancel: () {
-                  _isDragging = false;
-                },
-                onHorizontalDragUpdate: (detail) {
-                  if (detail.delta.distance == 0 || _isDragging) return;
-                  _isDragging = true;
-                  HapticFeedback.selectionClick();
-                  if (detail.delta.direction > 0) {
-                    moveLeft();
-                  } else {
-                    moveRight();
-                  }
-                },
-                onHorizontalDragEnd: (detail) {
-                  _isDragging = false;
-                },
-                onHorizontalDragCancel: () {
-                  _isDragging = false;
-                },
-                child: Stack(
-                  children: children,
-                ),
-              )),
+      top: false,
+      child: LayoutBuilder(builder: (context, constraints) {
+        final horizontal = constraints.maxWidth > 600
+            ? max(constraints.maxWidth * .1, (constraints.maxWidth - 600) / 2)
+            : AppSpacing.sm;
+        final width = constraints.maxWidth - horizontal * 2;
+        final height = max(180.0, constraints.maxHeight - 154);
+        _boardExtent = min(width, height).clamp(180.0, 580.0);
+        return Column(children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(
-                10 + MediaQuery.of(context).padding.left,
-                12,
-                10 + MediaQuery.of(context).padding.right,
-                max(4, MediaQuery.of(context).padding.bottom)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text('${S.of(context).Score}: ',
+                  style: Theme.of(context).textTheme.titleMedium),
+              Text('${_game.score}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w900)),
+            ]),
+          ),
+          Expanded(
+              child: Center(
+                  child: SizedBox.square(
+            dimension: _boardExtent,
+            child: GestureDetector(
+              onVerticalDragUpdate: (detail) =>
+                  _drag(detail.delta, vertical: true),
+              onVerticalDragEnd: (_) => _isDragging = false,
+              onVerticalDragCancel: () => _isDragging = false,
+              onHorizontalDragUpdate: (detail) => _drag(detail.delta),
+              onHorizontalDragEnd: (_) => _isDragging = false,
+              onHorizontalDragCancel: () => _isDragging = false,
+              child: Stack(children: _boardChildren(context)),
+            ),
+          ))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Row(children: [
               GameActionButton(
                   icon: Icons.casino_outlined,
                   label: S.of(context).Random,
-                  onPressed: () {
-                    var arr = <int>[];
-                    if (_game.canMoveDown()) arr.add(1);
-                    if (_game.canMoveLeft()) arr.add(2);
-                    if (_game.canMoveRight()) arr.add(3);
-                    if (_game.canMoveUp()) arr.add(4);
-
-                    arr.shuffle();
-
-                    if (arr.isNotEmpty) {
-                      int num = arr.first;
-                      if (num == 1) {
-                        moveDown();
-                      } else if (num == 2) {
-                        moveLeft();
-                      } else if (num == 3) {
-                        moveRight();
-                      } else if (num == 4) {
-                        moveUp();
-                      }
-                    }
-
-                    setState(() {});
-                  }),
+                  onPressed: _randomMove),
               GameActionButton(
                   icon: Icons.shuffle_rounded,
                   label: S.of(context).Shuffle,
@@ -352,119 +232,164 @@ class _GameWidgetState extends State<GameWidget> {
                   icon: Icons.refresh_rounded,
                   label: S.of(context).Restart,
                   onPressed: newGame),
-            ],
+            ]),
           ),
-        ),
-        const Spacer(),
           const AdBanner(margin: AppInsets.adContainerGame),
-        ],
-      ),
+        ]);
+      }),
     );
+  }
+
+  List<Widget> _boardChildren(BuildContext context) {
+    final currentBoardSize = boardSize();
+    final b = BoardConfig.borderWidth;
+    final tileSize =
+        (currentBoardSize.width - b * 2 - (column + 1) * cellPadding) / column;
+
+    List<Widget> tileWidgets = <Widget>[];
+    for (int r = 0; r < row; ++r) {
+      for (int c = 0; c < column; ++c) {
+        final cell = _game.get(r, c);
+        if (cell.number == 0) continue;
+
+        final left = c * tileSize + b + cellPadding * (c + 1);
+        final top = r * tileSize + b + cellPadding * (r + 1);
+
+        tileWidgets.add(
+          AnimatedPositioned(
+            key: ValueKey(cell.id),
+            left: left,
+            top: top,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+            child: GameTile(
+              cell: cell,
+              tileSize: tileSize,
+              shadowOffset: shadowOffset,
+            ),
+          ),
+        );
+      }
+    }
+
+    final children = <Widget>[];
+    children.add(_BoardGridWidget(this));
+    children.addAll(tileWidgets);
+    if (_isGameOver) {
+      children.add(GameOverOverlay(
+        score: _game.score,
+        onRestart: newGame,
+      ));
+    }
+    return children;
+  }
+
+  void _drag(Offset delta, {bool vertical = false}) {
+    if (delta.distance == 0 || _isDragging) return;
+    _isDragging = true;
+    HapticFeedback.selectionClick();
+    if (vertical) {
+      delta.dy > 0 ? moveDown() : moveUp();
+    } else {
+      delta.dx > 0 ? moveRight() : moveLeft();
+    }
+  }
+
+  void _randomMove() {
+    final moves = <VoidCallback>[];
+    if (_game.canMoveDown()) moves.add(moveDown);
+    if (_game.canMoveLeft()) moves.add(moveLeft);
+    if (_game.canMoveRight()) moves.add(moveRight);
+    if (_game.canMoveUp()) moves.add(moveUp);
+    moves.shuffle();
+    if (moves.isNotEmpty) moves.first();
   }
 
   Size boardSize() {
-    Size size = _queryData.size;
-    double width = size.width - _gameMargin.left - _gameMargin.right;
-    return Size(width, width);
+    return Size.square(_boardExtent);
   }
 }
 
-class AnimatedCellWidget extends AnimatedWidget {
+class GameTile extends StatefulWidget {
   final BoardCell cell;
-  final _GameWidgetState state;
+  final double tileSize;
+  final double shadowOffset;
 
-  const AnimatedCellWidget({
-    Key? key,
+  const GameTile({
+    super.key,
     required this.cell,
-    required this.state,
-    required Animation<double> animation,
-  }) : super(key: key, listenable: animation);
+    required this.tileSize,
+    required this.shadowOffset,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    final Animation<double> animation = listenable as Animation<double>;
-    double animationValue = animation.value;
-    Size boardSize = state.boardSize();
-    final b = BoardConfig.boardBorderWidth;
-    double width =
-        (boardSize.width - b * 2 - (state.column + 1) * state.cellPadding) /
-            state.column;
-
-    if (cell.number == 0) {
-      return Container();
-    }
-
-    return CellBox(
-      left:
-          (cell.column * width + b + state.cellPadding * (cell.column + 1)) +
-              width / 2 * (1 - animationValue),
-      top: cell.row * width +
-          b +
-          state.cellPadding * (cell.row + 1) +
-          width / 2 * (1 - animationValue),
-      size: width * animationValue,
-      color: tileColor(cell.number),
-      shadowOffset: state.shadowOffset,
-      text: Text(
-        cell.number.toString(),
-        maxLines: 1,
-        style: TextStyle(
-          fontSize: tileFontSize(cell.number, animationValue),
-          fontWeight: FontWeight.w900,
-          color: tileTextColor(cell.number),
-        ),
-      ),
-    );
-  }
+  State<GameTile> createState() => _GameTileState();
 }
 
-class CellWidget extends StatefulWidget {
-  final BoardCell cell;
-  final _GameWidgetState state;
-
-  const CellWidget({required this.cell, required this.state});
-
-  @override
-  _CellWidgetState createState() => _CellWidgetState();
-}
-
-class _CellWidgetState extends State<CellWidget>
+class _GameTileState extends State<GameTile>
     with SingleTickerProviderStateMixin {
-  late AnimationController controller;
-  late Animation<double> animation;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnim;
+  bool _playedNew = false;
 
   @override
-  initState() {
+  void initState() {
     super.initState();
-    controller = AnimationController(
+    _scaleController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    animation = Tween(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeOutBack),
+    _scaleAnim = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
     );
+
+    if (widget.cell.isNew) {
+      _scaleController.forward();
+      widget.cell.isNew = false;
+      _playedNew = true;
+    } else {
+      _scaleController.value = 1.0;
+    }
   }
 
   @override
-  dispose() {
-    controller.dispose();
+  void didUpdateWidget(GameTile old) {
+    super.didUpdateWidget(old);
+    if (widget.cell.isNew && !_playedNew) {
+      _scaleController.reset();
+      _scaleController.forward();
+      widget.cell.isNew = false;
+      _playedNew = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
     super.dispose();
-    widget.cell.isNew = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.cell.isNew && !widget.cell.isEmpty()) {
-      controller.reset();
-      controller.forward();
-      widget.cell.isNew = false;
-    } else {
-      controller.animateTo(1.0);
-    }
-    return AnimatedCellWidget(
-      cell: widget.cell,
-      state: widget.state,
-      animation: animation,
+    final number = widget.cell.number;
+    return AnimatedBuilder(
+      animation: _scaleAnim,
+      builder: (context, child) => Transform.scale(
+        scale: _scaleAnim.value,
+        child: child,
+      ),
+      child: CellBox(
+        left: 0,
+        top: 0,
+        size: widget.tileSize,
+        color: tileColor(number),
+        shadowOffset: widget.shadowOffset,
+        text: Text(
+          number.toString(),
+          maxLines: 1,
+          style: tileTextStyle(context, number),
+        ),
+      ),
     );
   }
 }
@@ -492,7 +417,7 @@ class CellBox extends StatelessWidget {
     return Positioned(
       left: left,
       top: top,
-      child: color != AppColors.emptyTile
+      child: color != GameTheme.of(context).emptyTile
           ? Container(
               width: size,
               height: size,
@@ -502,11 +427,17 @@ class CellBox extends StatelessWidget {
                 borderRadius: AppRadii.tile,
                 boxShadow: [
                   BoxShadow(
-                      color: AppColors.white50,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: .28),
                       blurRadius: shadowOffset * 2,
                       offset: Offset(-shadowOffset, -shadowOffset)),
                   BoxShadow(
-                      color: AppColors.black50,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .shadow
+                          .withValues(alpha: .45),
                       blurRadius: shadowOffset * 2,
                       offset: Offset(shadowOffset, shadowOffset)),
                 ],
@@ -553,7 +484,7 @@ class GameOverOverlay extends StatelessWidget {
         onTap: () {},
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.darkOverlay,
+            color: GameTheme.of(context).scrim,
             borderRadius: AppRadii.board,
           ),
           child: Center(
@@ -561,19 +492,18 @@ class GameOverOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(S.of(context).Game_Over,
-                    style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white)),
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 12),
-                Text(S.of(context).Score + ": $score",
-                    style: const TextStyle(
-                        fontSize: 22, color: AppColors.white70)),
+                Text('${S.of(context).Score}: $score',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 16),
                 Text(S.of(context).Game_Over_Message,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 16, color: AppColors.white70)),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 28),
                 PauseButton(
                   text: S.of(context).Restart,

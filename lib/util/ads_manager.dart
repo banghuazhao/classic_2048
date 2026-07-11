@@ -14,7 +14,6 @@ class AdsManager {
     if (disableAllAdsForScreenshot) return "";
     return AdConfig.appOpenAdUnitId;
   }
-
 }
 
 class AppOpenAdManager {

@@ -1,36 +1,46 @@
-import 'package:classic_2048/generated/l10n.dart';
-import 'package:classic_2048/widgets/game_button.dart';
 import 'package:flutter/material.dart';
 
-class GamePauseCoverPage extends StatefulWidget {
+import 'generated/l10n.dart';
+import 'theme/app_theme.dart';
+import 'widgets/game_button.dart';
+
+class GamePauseCoverPage extends StatelessWidget {
   final String bg;
-
-  const GamePauseCoverPage({Key? key, required this.bg}) : super(key: key);
+  const GamePauseCoverPage({super.key, required this.bg});
 
   @override
-  _GamePauseCoverPageState createState() => _GamePauseCoverPageState();
-}
-
-class _GamePauseCoverPageState extends State<GamePauseCoverPage> {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/image/${widget.bg}.jpg"),
-              fit: BoxFit.cover,
+  Widget build(BuildContext context) => Scaffold(
+        body: Stack(fit: StackFit.expand, children: [
+          Image.asset('assets/image/$bg.jpg', fit: BoxFit.cover),
+          ColoredBox(color: GameTheme.of(context).scrim),
+          SafeArea(
+              child: Center(
+                  child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Card(
+              margin: const EdgeInsets.all(AppSpacing.lg),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.pause_circle_filled_rounded,
+                      size: 64, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Paused',
+                      style: Theme.of(context).textTheme.headlineMedium),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text('Your board is waiting.',
+                      style: Theme.of(context).textTheme.bodyLarge),
+                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                      width: double.infinity,
+                      child: PauseButton(
+                        text: S.of(context).Continue,
+                        onPressed: () => Navigator.pop(context),
+                      )),
+                ]),
+              ),
             ),
-          ),
-          child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Center(
-                child: PauseButton(
-                  text: S.of(context).Continue,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              )),
-        ));
-  }
+          ))),
+        ]),
+      );
 }
