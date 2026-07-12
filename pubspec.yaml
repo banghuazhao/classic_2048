@@ -32,6 +32,7 @@ dependencies:
   app_tracking_transparency: ^2.0.7
   shared_preferences: ^2.5.5
   share_plus: ^13.2.0
+  games_services: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +40,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.8
   flutter_launcher_icons: "^0.14.4"
+  intl_utils: ^2.8.11
 
 flutter_icons:
   android: "launcher_icon"

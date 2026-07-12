@@ -1,6 +1,11 @@
 import 'package:classic_2048/challenge.dart';
 import 'package:classic_2048/logic.dart';
 import 'package:classic_2048/progress_store.dart';
+import 'package:classic_2048/onboarding.dart';
+import 'package:classic_2048/generated/l10n.dart';
+import 'package:classic_2048/theme/app_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,5 +47,48 @@ void main() {
     expect(stats['achievement2048'], isTrue);
     expect(stats['achievement10k'], isTrue);
     expect(stats['achievementEfficient'], isTrue);
+  });
+
+  test('daily completion records history and streak', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ProgressStore();
+    await store.record(
+        mode: 'daily-today',
+        score: 100,
+        moves: 100,
+        highestTile: 64,
+        seconds: 60);
+    final stats = await store.stats();
+    expect(stats['dailyHistory'], hasLength(1));
+    expect(stats['dailyStreak'], 1);
+  });
+
+  testWidgets('localized onboarding completes and persists', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    var completed = false;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('zh'),
+      theme: AppTheme.light,
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate
+      ],
+      supportedLocales: S.delegate.supportedLocales,
+      home: OnboardingPage(onComplete: () => completed = true),
+    ));
+    expect(find.text('每天都有新试炼'), findsOneWidget);
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始游戏'));
+    await tester.pumpAndSettle();
+    expect(completed, isTrue);
+    expect(
+        (await SharedPreferences.getInstance())
+            .getBool('onboarding_complete_v1'),
+        isTrue);
   });
 }

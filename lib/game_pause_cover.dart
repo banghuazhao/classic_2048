@@ -25,10 +25,10 @@ class GamePauseCoverPage extends StatelessWidget {
                   Icon(Icons.pause_circle_filled_rounded,
                       size: 64, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: AppSpacing.md),
-                  Text('Paused',
+                  Text(S.of(context).Paused,
                       style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: AppSpacing.xs),
-                  Text('Your board is waiting.',
+                  Text(S.of(context).Board_Waiting,
                       style: Theme.of(context).textTheme.bodyLarge),
                   const SizedBox(height: AppSpacing.lg),
                   SizedBox(

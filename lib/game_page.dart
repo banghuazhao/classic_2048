@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'challenge.dart';
 import 'generated/l10n.dart';
+import 'game_center_service.dart';
 import 'logic.dart';
 import 'progress_store.dart';
 
@@ -46,7 +47,7 @@ class _GamePageState extends State<GamePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.challenge.title),
+        title: Text(widget.challenge.localizedTitle(S.of(context))),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           tooltip: S.of(context).Back,
@@ -248,6 +249,13 @@ class _GameWidgetState extends State<GameWidget> {
         moves: _moves,
         highestTile: _game.highestTile,
         seconds: _elapsedSeconds);
+    final stats = await _store.stats();
+    await GameCenterService().submit(
+        mode: widget.challenge.id,
+        score: _game.score,
+        highestTile: _game.highestTile,
+        moves: _moves,
+        streak: stats['dailyStreak'] as int? ?? 0);
     if (mounted) setState(() {});
   }
 
@@ -289,11 +297,11 @@ class _GameWidgetState extends State<GameWidget> {
                   _metric(context, S.of(context).Score, '${_game.score}'),
                   _metric(
                       context,
-                      'Moves',
+                      S.of(context).Moves,
                       widget.challenge.moveLimit == null
                           ? '$_moves'
                           : '$_moves/${widget.challenge.moveLimit}'),
-                  _metric(context, 'Time', _timeLabel),
+                  _metric(context, S.of(context).Time, _timeLabel),
                 ]),
           ),
           Expanded(
@@ -403,16 +411,19 @@ class _GameWidgetState extends State<GameWidget> {
   }
 
   String get _resultTitle => widget.challenge.kind == ChallengeKind.sprint
-      ? 'Time!'
+      ? S.of(context).Time_Up
       : widget.challenge.moveLimit != null &&
               _moves >= widget.challenge.moveLimit!
-          ? 'Challenge Complete'
-          : 'Game Over';
+          ? S.of(context).Challenge_Complete
+          : S.of(context).Game_Over;
   void _shareResult() {
     final box = context.findRenderObject() as RenderBox?;
     SharePlus.instance.share(ShareParams(
-      text: 'I scored ${_game.score} in ${widget.challenge.title} with '
-          '$_moves moves and reached ${_game.highestTile}.',
+      text: S.of(context).Share_Message(
+          _game.score,
+          widget.challenge.localizedTitle(S.of(context)),
+          _moves,
+          _game.highestTile),
       sharePositionOrigin:
           box == null ? null : box.localToGlobal(Offset.zero) & box.size,
     ));
@@ -641,7 +652,7 @@ class GameOverOverlay extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 16),
-                Text('$moves moves · Highest tile $highestTile',
+                Text(S.of(context).Highest_Tile_Result(moves, highestTile),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 16),
@@ -658,7 +669,7 @@ class GameOverOverlay extends StatelessWidget {
                   TextButton.icon(
                       onPressed: onShare,
                       icon: const Icon(Icons.share_rounded),
-                      label: const Text('Share result')),
+                      label: Text(S.of(context).Share_Result)),
               ],
             ),
           ),

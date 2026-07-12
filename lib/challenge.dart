@@ -1,3 +1,5 @@
+import 'generated/l10n.dart';
+
 enum ChallengeKind { classic, sprint, moveLimit, daily }
 
 class ChallengeConfig {
@@ -29,5 +31,18 @@ class ChallengeConfig {
         ChallengeKind.sprint => '${seconds! ~/ 60} minute score race',
         ChallengeKind.moveLimit => 'Highest score in $moveLimit moves',
         ChallengeKind.daily => 'Same 100-move puzzle for everyone',
+      };
+
+  String localizedTitle(S s) => switch (kind) {
+        ChallengeKind.classic => s.Classic,
+        ChallengeKind.sprint => s.Sprint,
+        ChallengeKind.moveLimit => s.Move_Challenge,
+        ChallengeKind.daily => s.Daily_Challenge,
+      };
+  String localizedSubtitle(S s) => switch (kind) {
+        ChallengeKind.classic => s.Classic_Endless,
+        ChallengeKind.sprint => s.Sprint_Subtitle,
+        ChallengeKind.moveLimit => s.Move_Subtitle,
+        ChallengeKind.daily => s.Daily_Subtitle,
       };
 }

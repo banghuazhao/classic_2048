@@ -35,7 +35,33 @@ class ProgressStore {
     if (highestTile >= 2048) data['achievement2048'] = true;
     if (score >= 10000) data['achievement10k'] = true;
     if (highestTile >= 512 && moves <= 100) data['achievementEfficient'] = true;
+    if (mode.startsWith('daily-')) {
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      final history =
+          List<String>.from(data['dailyHistory'] as List<dynamic>? ?? const []);
+      if (!history.contains(today)) history.add(today);
+      history.sort();
+      data['dailyHistory'] =
+          history.length > 31 ? history.sublist(history.length - 31) : history;
+      data['dailyStreak'] = _streak(history);
+      if ((data['dailyStreak'] as int) >= 7) data['achievementStreak7'] = true;
+    }
     await prefs.setString(_statsKey, jsonEncode(data));
+  }
+
+  int _streak(List<String> history) {
+    final days = history.map(DateTime.parse).toSet();
+    final now = DateTime.now();
+    var cursor = DateTime(now.year, now.month, now.day);
+    if (!days.contains(cursor)) {
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    var streak = 0;
+    while (days.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
   }
 
   Future<void> save(Map<String, dynamic> game) async =>
