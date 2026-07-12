@@ -6,7 +6,9 @@ class Game {
   final int newNum;
   int score = 0;
 
-  Game(this.row, this.column, this.newNum);
+  final Random _random;
+  Game(this.row, this.column, this.newNum, {int? seed})
+      : _random = Random(seed);
 
   late List<List<BoardCell>> _boardCells;
 
@@ -32,9 +34,9 @@ class Game {
     return _boardCells[r][c];
   }
 
-  void moveLeft() {
+  bool moveLeft() {
     if (!canMoveLeft()) {
-      return;
+      return false;
     }
     for (int r = 0; r < row; ++r) {
       for (int c = 0; c < column; ++c) {
@@ -43,11 +45,12 @@ class Game {
     }
     randomEmptyCell(newNum);
     resetMergeStatus();
+    return true;
   }
 
-  void moveRight() {
+  bool moveRight() {
     if (!canMoveRight()) {
-      return;
+      return false;
     }
     for (int r = 0; r < row; ++r) {
       for (int c = column - 2; c >= 0; --c) {
@@ -56,11 +59,12 @@ class Game {
     }
     randomEmptyCell(newNum);
     resetMergeStatus();
+    return true;
   }
 
-  void moveUp() {
+  bool moveUp() {
     if (!canMoveUp()) {
-      return;
+      return false;
     }
     for (int r = 0; r < row; ++r) {
       for (int c = 0; c < column; ++c) {
@@ -69,11 +73,12 @@ class Game {
     }
     randomEmptyCell(newNum);
     resetMergeStatus();
+    return true;
   }
 
-  void moveDown() {
+  bool moveDown() {
     if (!canMoveDown()) {
-      return;
+      return false;
     }
     for (int r = row - 2; r >= 0; --r) {
       for (int c = 0; c < column; ++c) {
@@ -82,6 +87,7 @@ class Game {
     }
     randomEmptyCell(newNum);
     resetMergeStatus();
+    return true;
   }
 
   void shuffle() {
@@ -229,9 +235,8 @@ class Game {
     if (emptyCells.isEmpty) {
       return;
     }
-    Random r = Random();
     for (int i = 0; i < cnt && emptyCells.isNotEmpty; i++) {
-      int index = r.nextInt(emptyCells.length);
+      int index = _random.nextInt(emptyCells.length);
       emptyCells[index].number = randomCellNum();
       emptyCells[index].isNew = true;
       emptyCells.removeAt(index);
@@ -240,8 +245,7 @@ class Game {
 
   // 随机单元数字，出现4的概率为1/15
   int randomCellNum() {
-    final Random r = Random();
-    return r.nextInt(15) == 0 ? 4 : 2;
+    return _random.nextInt(15) == 0 ? 4 : 2;
   }
 
   void resetMergeStatus() {
@@ -250,6 +254,32 @@ class Game {
         cell.isMerged = false;
       });
     });
+  }
+
+  int get highestTile => _boardCells.expand((row) => row).fold(
+      0, (highest, cell) => cell.number > highest ? cell.number : highest);
+
+  Map<String, dynamic> toJson() => {
+        'row': row,
+        'column': column,
+        'newNum': newNum,
+        'score': score,
+        'board': _boardCells
+            .map((cells) => cells.map((cell) => cell.number).toList())
+            .toList(),
+      };
+
+  void restore(Map<String, dynamic> json) {
+    final board = json['board'] as List<dynamic>;
+    for (var r = 0; r < row; r++) {
+      final values = board[r] as List<dynamic>;
+      for (var c = 0; c < column; c++) {
+        _boardCells[r][c].number = values[c] as int;
+        _boardCells[r][c].isNew = false;
+      }
+    }
+    score = json['score'] as int? ?? 0;
+    resetMergeStatus();
   }
 }
 

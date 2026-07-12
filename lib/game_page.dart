@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:classic_2048/game_pause_cover.dart';
@@ -5,28 +6,47 @@ import 'package:classic_2048/theme/app_theme.dart';
 import 'package:classic_2048/widgets/ad_banner.dart';
 import 'package:classic_2048/widgets/game_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
+import 'challenge.dart';
 import 'generated/l10n.dart';
 import 'logic.dart';
+import 'progress_store.dart';
 
-class GamePage extends StatelessWidget {
+class GamePage extends StatefulWidget {
   final int row;
   final int newNum;
   final String bg;
+  final ChallengeConfig challenge;
 
   const GamePage({
     super.key,
     required this.row,
     required this.newNum,
     required this.bg,
+    this.challenge = const ChallengeConfig.classic(),
   });
+
+  @override
+  State<GamePage> createState() => _GamePageState();
+}
+
+class _GamePageState extends State<GamePage> {
+  final _paused = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _paused.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('$row × $row'),
+        title: Text(widget.challenge.title),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           tooltip: S.of(context).Back,
@@ -35,8 +55,14 @@ class GamePage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: S.of(context).Continue,
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => GamePauseCoverPage(bg: bg))),
+            onPressed: () async {
+              _paused.value = true;
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => GamePauseCoverPage(bg: widget.bg)));
+              _paused.value = false;
+            },
             icon: const Icon(Icons.pause_rounded),
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -44,8 +70,10 @@ class GamePage extends StatelessWidget {
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: GameWidget(
-        row: row,
-        newNum: newNum,
+        row: widget.row,
+        newNum: widget.newNum,
+        challenge: widget.challenge,
+        paused: _paused,
       ),
     );
   }
@@ -99,8 +127,15 @@ class _BoardGridWidget extends StatelessWidget {
 class GameWidget extends StatefulWidget {
   final int row;
   final int newNum;
+  final ChallengeConfig challenge;
+  final ValueListenable<bool>? paused;
 
-  const GameWidget({super.key, required this.row, required this.newNum});
+  const GameWidget(
+      {super.key,
+      required this.row,
+      required this.newNum,
+      this.challenge = const ChallengeConfig.classic(),
+      this.paused});
 
   @override
   State<StatefulWidget> createState() {
@@ -118,6 +153,11 @@ class _GameWidgetState extends State<GameWidget> {
   double _boardExtent = 0;
   bool _isDragging = false;
   bool _isGameOver = false;
+  bool _isFinished = false;
+  int _moves = 0;
+  int _elapsedSeconds = 0;
+  Timer? _timer;
+  final _store = ProgressStore();
 
   @override
   void initState() {
@@ -130,49 +170,103 @@ class _GameWidgetState extends State<GameWidget> {
     cellPadding = BoardConfig.cellPadding(row);
     shadowOffset = BoardConfig.shadowOffset(row);
 
-    _game = Game(row, column, newNum);
-    newGame();
+    _game = Game(row, column, newNum, seed: widget.challenge.seed);
+    _game.init();
+    _restoreGame();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   void newGame() {
     _game.init();
     _isGameOver = false;
+    _isFinished = false;
+    _moves = 0;
+    _elapsedSeconds = 0;
+    _store.clearSave();
     setState(() {});
   }
 
   void moveLeft() {
-    setState(() {
-      _game.moveLeft();
-      checkGameOver();
-    });
+    _performMove(_game.moveLeft);
   }
 
   void moveRight() {
-    setState(() {
-      _game.moveRight();
-      checkGameOver();
-    });
+    _performMove(_game.moveRight);
   }
 
   void moveUp() {
-    setState(() {
-      _game.moveUp();
-      checkGameOver();
-    });
+    _performMove(_game.moveUp);
   }
 
   void moveDown() {
-    setState(() {
-      _game.moveDown();
-      checkGameOver();
-    });
+    _performMove(_game.moveDown);
+  }
+
+  void _performMove(bool Function() move) {
+    if (_isFinished || !move()) return;
+    HapticFeedback.selectionClick();
+    _moves++;
+    _saveGame();
+    checkGameOver();
+    if (widget.challenge.moveLimit != null &&
+        _moves >= widget.challenge.moveLimit!) {
+      _finish();
+    }
+    setState(() {});
   }
 
   void checkGameOver() {
     if (_game.isGameOver()) {
       HapticFeedback.heavyImpact();
       setState(() => _isGameOver = true);
+      _finish();
     }
+  }
+
+  void _tick() {
+    if (!mounted || _isFinished || (widget.paused?.value ?? false)) return;
+    _elapsedSeconds++;
+    final limit = widget.challenge.seconds;
+    if (limit != null && _elapsedSeconds >= limit) _finish();
+    setState(() {});
+  }
+
+  Future<void> _finish() async {
+    if (_isFinished) return;
+    _isFinished = true;
+    _isGameOver = true;
+    await _store.clearSave();
+    await _store.record(
+        mode: widget.challenge.id,
+        score: _game.score,
+        moves: _moves,
+        highestTile: _game.highestTile,
+        seconds: _elapsedSeconds);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _saveGame() => _store.save({
+        'mode': widget.challenge.id,
+        'moves': _moves,
+        'elapsed': _elapsedSeconds,
+        'game': _game.toJson(),
+      });
+
+  Future<void> _restoreGame() async {
+    final saved = await _store.load();
+    if (!mounted || saved?['mode'] != widget.challenge.id) return;
+    final game = saved!['game'] as Map<String, dynamic>;
+    if (game['row'] != row || game['newNum'] != newNum) return;
+    _game.restore(game);
+    _moves = saved['moves'] as int? ?? 0;
+    _elapsedSeconds = saved['elapsed'] as int? ?? 0;
+    setState(() {});
   }
 
   @override
@@ -189,15 +283,18 @@ class _GameWidgetState extends State<GameWidget> {
         return Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text('${S.of(context).Score}: ',
-                  style: Theme.of(context).textTheme.titleMedium),
-              Text('${_game.score}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w900)),
-            ]),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _metric(context, S.of(context).Score, '${_game.score}'),
+                  _metric(
+                      context,
+                      'Moves',
+                      widget.challenge.moveLimit == null
+                          ? '$_moves'
+                          : '$_moves/${widget.challenge.moveLimit}'),
+                  _metric(context, 'Time', _timeLabel),
+                ]),
           ),
           Expanded(
               child: Center(
@@ -278,16 +375,52 @@ class _GameWidgetState extends State<GameWidget> {
     if (_isGameOver) {
       children.add(GameOverOverlay(
         score: _game.score,
+        moves: _moves,
+        highestTile: _game.highestTile,
+        title: _resultTitle,
+        onShare: _shareResult,
         onRestart: newGame,
       ));
     }
     return children;
   }
 
+  Widget _metric(BuildContext context, String label, String value) =>
+      Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(value,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w900)),
+      ]);
+
+  String get _timeLabel {
+    final seconds = widget.challenge.seconds == null
+        ? _elapsedSeconds
+        : max(0, widget.challenge.seconds! - _elapsedSeconds);
+    return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+  }
+
+  String get _resultTitle => widget.challenge.kind == ChallengeKind.sprint
+      ? 'Time!'
+      : widget.challenge.moveLimit != null &&
+              _moves >= widget.challenge.moveLimit!
+          ? 'Challenge Complete'
+          : 'Game Over';
+  void _shareResult() {
+    final box = context.findRenderObject() as RenderBox?;
+    SharePlus.instance.share(ShareParams(
+      text: 'I scored ${_game.score} in ${widget.challenge.title} with '
+          '$_moves moves and reached ${_game.highestTile}.',
+      sharePositionOrigin:
+          box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+    ));
+  }
+
   void _drag(Offset delta, {bool vertical = false}) {
     if (delta.distance == 0 || _isDragging) return;
     _isDragging = true;
-    HapticFeedback.selectionClick();
     if (vertical) {
       delta.dy > 0 ? moveDown() : moveUp();
     } else {
@@ -468,12 +601,20 @@ class CellBox extends StatelessWidget {
 
 class GameOverOverlay extends StatelessWidget {
   final int score;
+  final int moves;
+  final int highestTile;
+  final String title;
   final VoidCallback onRestart;
+  final VoidCallback? onShare;
 
   const GameOverOverlay({
     super.key,
     required this.score,
+    this.moves = 0,
+    this.highestTile = 0,
+    this.title = 'Game Over',
     required this.onRestart,
+    this.onShare,
   });
 
   @override
@@ -491,13 +632,17 @@ class GameOverOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(S.of(context).Game_Over,
+                Text(title,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 12),
                 Text('${S.of(context).Score}: $score',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onInverseSurface)),
+                const SizedBox(height: 16),
+                Text('$moves moves · Highest tile $highestTile',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 16),
                 Text(S.of(context).Game_Over_Message,
@@ -509,6 +654,11 @@ class GameOverOverlay extends StatelessWidget {
                   text: S.of(context).Restart,
                   onPressed: onRestart,
                 ),
+                if (onShare != null)
+                  TextButton.icon(
+                      onPressed: onShare,
+                      icon: const Icon(Icons.share_rounded),
+                      label: const Text('Share result')),
               ],
             ),
           ),

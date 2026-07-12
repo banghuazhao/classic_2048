@@ -5,9 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'config/ad_config.dart';
+import 'challenge.dart';
 import 'game_page.dart';
 import 'generated/l10n.dart';
 import 'theme/app_theme.dart';
+import 'progress_store.dart';
 import 'util/ads_manager.dart';
 import 'widgets/ad_banner.dart';
 import 'widgets/game_button.dart';
@@ -111,7 +113,7 @@ class _GameChooseState extends State<GameChoose> {
                                     .onInverseSurface)),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                        'Pick a board and how many new tiles appear after each move.',
+                        'Daily puzzles, score sprints, and move-limited strategy.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Theme.of(context)
@@ -119,18 +121,91 @@ class _GameChooseState extends State<GameChoose> {
                                 .onInverseSurface
                                 .withValues(alpha: .86))),
                     const SizedBox(height: AppSpacing.xl),
+                    _section(context, 'Today'),
+                    _challenge(context, ChallengeConfig.daily(DateTime.now()),
+                        Icons.calendar_today_rounded),
+                    _section(context, 'Challenge modes'),
+                    _challenge(context, const ChallengeConfig.sprint(180),
+                        Icons.timer_rounded),
+                    _challenge(context, const ChallengeConfig.moveLimit(100),
+                        Icons.route_rounded),
+                    _section(context, 'Classic boards'),
                     _mode(context, 4, 1, 'bg1', 'Classic · one new tile',
                         Icons.auto_awesome_rounded),
                     _mode(context, 5, 1, 'bg2', 'More room · relaxed pace'),
                     _mode(context, 5, 2, 'bg3', 'More room · faster challenge'),
                     _mode(context, 6, 2, 'bg4', 'Large board · strategic'),
                     _mode(context, 6, 3, 'bg5', 'Large board · expert'),
+                    const SizedBox(height: AppSpacing.sm),
+                    OutlinedButton.icon(
+                        onPressed: () => _showStats(context),
+                        icon: const Icon(Icons.insights_rounded),
+                        label: const Text('Progress & achievements')),
                   ]),
             ))),
             const AdBanner(),
           ])),
         ]),
       );
+
+  Widget _section(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+        child: Text(text,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onInverseSurface,
+                fontWeight: FontWeight.w900)),
+      );
+
+  Widget _challenge(
+          BuildContext context, ChallengeConfig challenge, IconData icon) =>
+      Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: PrimaryButton(
+            text: challenge.title,
+            subtitle: challenge.subtitle,
+            icon: icon,
+            onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => GamePage(
+                        row: 4, newNum: 1, bg: 'bg1', challenge: challenge))),
+          ));
+
+  Future<void> _showStats(BuildContext context) async {
+    final stats = await ProgressStore().stats();
+    if (!context.mounted) return;
+    final achievements = <String>[
+      if (stats['achievement2048'] == true) '2048 Master',
+      if (stats['achievement10k'] == true) '10K Club',
+      if (stats['achievementEfficient'] == true) 'Efficient Thinker',
+    ];
+    await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+                child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Your progress',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                        '${stats['games'] ?? 0} games · ${stats['totalMoves'] ?? 0} moves'),
+                    Text(
+                        'Best score ${stats['bestScore'] ?? 0} · Highest tile ${stats['highestTile'] ?? 0}'),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text('Achievements',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(achievements.isEmpty
+                        ? 'Complete challenges to unlock achievements.'
+                        : achievements.join('  •  ')),
+                  ]),
+            )));
+  }
 
   Widget _mode(
           BuildContext context, int row, int count, String bg, String subtitle,
