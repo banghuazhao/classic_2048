@@ -1,5 +1,5 @@
 name: classic_2048
-description: A new Flutter application.
+description: A progression-driven number strategy game with daily trials, levels, golden tiles, and challenge modes.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -33,6 +33,7 @@ dependencies:
   shared_preferences: ^2.5.5
   share_plus: ^13.2.0
   games_services: ^5.1.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/image/
+    - assets/audio/music/
+    - assets/audio/effects/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

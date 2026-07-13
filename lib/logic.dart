@@ -5,9 +5,12 @@ class Game {
   final int column;
   final int newNum;
   int score = 0;
+  final bool goldenEnabled;
+  int goldenHighest = 0;
 
   final Random _random;
-  Game(this.row, this.column, this.newNum, {int? seed})
+  Game(this.row, this.column, this.newNum,
+      {int? seed, this.goldenEnabled = false})
       : _random = Random(seed);
 
   late List<List<BoardCell>> _boardCells;
@@ -26,8 +29,10 @@ class Game {
       }
     }
     score = 0;
+    goldenHighest = 0;
     resetMergeStatus();
     randomEmptyCell(2);
+    if (goldenEnabled) _assignGoldenTile();
   }
 
   BoardCell get(int r, int c) {
@@ -100,6 +105,8 @@ class Game {
             column: c,
             number: _boardCells[r][c].number,
             isNew: _boardCells[r][c].isNew);
+        newBoardCell.id = _boardCells[r][c].id;
+        newBoardCell.isGolden = _boardCells[r][c].isGolden;
         newBoardCell.isMerged = _boardCells[r][c].isMerged;
         arr.add(newBoardCell);
       }
@@ -111,6 +118,8 @@ class Game {
     for (int r = 0; r < row; ++r) {
       for (int c = 0; c < column; ++c) {
         _boardCells[r][c].number = arr[i].number;
+        _boardCells[r][c].id = arr[i].id;
+        _boardCells[r][c].isGolden = arr[i].isGolden;
         _boardCells[r][c].isMerged = false;
         _boardCells[r][c].isNew = false;
         i = i + 1;
@@ -192,7 +201,10 @@ class Game {
 
   bool canMerge(BoardCell a, BoardCell b) {
     return !b.isMerged &&
-        ((b.isEmpty() && !a.isEmpty()) || (!a.isEmpty() && a == b));
+        ((b.isEmpty() && !a.isEmpty()) ||
+            (!a.isEmpty() &&
+                !b.isEmpty() &&
+                (a == b || a.isGolden || b.isGolden)));
   }
 
   void merge(BoardCell a, BoardCell b) {
@@ -206,13 +218,21 @@ class Game {
     if (b.isEmpty()) {
       b.number = a.number;
       b.id = a.id;
+      b.isGolden = a.isGolden;
       a.number = 0;
+      a.isGolden = false;
       a.id = BoardCell._nextId++;
-    } else if (a == b) {
-      b.number = b.number * 2;
+    } else if (a == b || a.isGolden || b.isGolden) {
+      final goldenMerge = a.isGolden || b.isGolden;
+      b.number = goldenMerge
+          ? (a.number > b.number ? a.number : b.number) * 3
+          : b.number * 2;
       a.number = 0;
+      a.isGolden = false;
       a.id = BoardCell._nextId++;
       score += b.number;
+      b.isGolden = goldenMerge;
+      if (goldenMerge && b.number > goldenHighest) goldenHighest = b.number;
       b.isMerged = true;
       b.isNew = true;
       b.id = BoardCell._nextId++;
@@ -248,6 +268,77 @@ class Game {
     return _random.nextInt(15) == 0 ? 4 : 2;
   }
 
+  void _assignGoldenTile() {
+    final occupied = _boardCells
+        .expand((cells) => cells)
+        .where((cell) => !cell.isEmpty())
+        .toList();
+    if (occupied.isEmpty || occupied.any((cell) => cell.isGolden)) return;
+    final cell = occupied[_random.nextInt(occupied.length)];
+    cell.isGolden = true;
+    cell.isNew = true;
+  }
+
+  bool doubleCell(int r, int c) {
+    final cell = get(r, c);
+    if (cell.isEmpty()) return false;
+    cell.number *= 2;
+    cell.id = BoardCell._nextId++;
+    cell.isNew = true;
+    return true;
+  }
+
+  bool hammerCell(int r, int c) {
+    final cell = get(r, c);
+    if (cell.isEmpty()) return false;
+    cell.number = 0;
+    cell.isGolden = false;
+    cell.id = BoardCell._nextId++;
+    if (goldenEnabled) _assignGoldenTile();
+    return true;
+  }
+
+  bool bombCell(int centerRow, int centerColumn) {
+    var total = 0;
+    var containsGolden = false;
+    for (var r = centerRow - 1; r <= centerRow + 1; r++) {
+      for (var c = centerColumn - 1; c <= centerColumn + 1; c++) {
+        if (r < 0 || r >= row || c < 0 || c >= column) continue;
+        final cell = get(r, c);
+        total += cell.number;
+        containsGolden = containsGolden || cell.isGolden;
+        cell.number = 0;
+        cell.isGolden = false;
+        cell.id = BoardCell._nextId++;
+      }
+    }
+    if (total == 0) return false;
+    final target = get(centerRow, centerColumn);
+    target.number = total;
+    target.isGolden = containsGolden;
+    target.isNew = true;
+    target.id = BoardCell._nextId++;
+    score += total;
+    if (goldenEnabled) _assignGoldenTile();
+    return true;
+  }
+
+  void reviveZen() {
+    final occupied = _boardCells
+        .expand((cells) => cells)
+        .where((cell) => !cell.isEmpty())
+        .toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+    final removeCount = (occupied.length / 4).ceil();
+    for (final cell in occupied.take(removeCount)) {
+      cell.number = 0;
+      cell.isGolden = false;
+      cell.id = BoardCell._nextId++;
+    }
+    randomEmptyCell(1);
+    if (goldenEnabled) _assignGoldenTile();
+  }
+
   void resetMergeStatus() {
     _boardCells.forEach((cells) {
       cells.forEach((cell) {
@@ -264,8 +355,14 @@ class Game {
         'column': column,
         'newNum': newNum,
         'score': score,
+        'goldenHighest': goldenHighest,
         'board': _boardCells
-            .map((cells) => cells.map((cell) => cell.number).toList())
+            .map((cells) => cells
+                .map((cell) => {
+                      'number': cell.number,
+                      'golden': cell.isGolden,
+                    })
+                .toList())
             .toList(),
       };
 
@@ -274,11 +371,19 @@ class Game {
     for (var r = 0; r < row; r++) {
       final values = board[r] as List<dynamic>;
       for (var c = 0; c < column; c++) {
-        _boardCells[r][c].number = values[c] as int;
+        final value = values[c];
+        if (value is Map<String, dynamic>) {
+          _boardCells[r][c].number = value['number'] as int;
+          _boardCells[r][c].isGolden = value['golden'] as bool? ?? false;
+        } else {
+          _boardCells[r][c].number = value as int;
+          _boardCells[r][c].isGolden = false;
+        }
         _boardCells[r][c].isNew = false;
       }
     }
     score = json['score'] as int? ?? 0;
+    goldenHighest = json['goldenHighest'] as int? ?? 0;
     resetMergeStatus();
   }
 }
@@ -291,6 +396,7 @@ class BoardCell {
   int number = 0;
   bool isMerged = false;
   bool isNew = false;
+  bool isGolden = false;
 
   BoardCell(
       {required this.row,

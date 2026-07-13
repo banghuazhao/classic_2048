@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'challenge.dart';
+import 'audio_service.dart';
 import 'generated/l10n.dart';
 import 'game_center_service.dart';
 import 'logic.dart';
@@ -155,10 +156,16 @@ class _GameWidgetState extends State<GameWidget> {
   bool _isDragging = false;
   bool _isGameOver = false;
   bool _isFinished = false;
+  bool _objectiveWon = false;
   int _moves = 0;
   int _elapsedSeconds = 0;
   Timer? _timer;
   final _store = ProgressStore();
+  ToolKind? _selectedTool;
+  int _doubleUses = 2;
+  int _hammerUses = 2;
+  int _bombUses = 1;
+  int _shuffleVersion = 0;
 
   @override
   void initState() {
@@ -171,7 +178,8 @@ class _GameWidgetState extends State<GameWidget> {
     cellPadding = BoardConfig.cellPadding(row);
     shadowOffset = BoardConfig.shadowOffset(row);
 
-    _game = Game(row, column, newNum, seed: widget.challenge.seed);
+    _game = Game(row, column, newNum,
+        seed: widget.challenge.seed, goldenEnabled: widget.challenge.hasGolden);
     _game.init();
     _restoreGame();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
@@ -187,8 +195,13 @@ class _GameWidgetState extends State<GameWidget> {
     _game.init();
     _isGameOver = false;
     _isFinished = false;
+    _objectiveWon = false;
     _moves = 0;
     _elapsedSeconds = 0;
+    _selectedTool = null;
+    _doubleUses = 2;
+    _hammerUses = 2;
+    _bombUses = 1;
     _store.clearSave();
     setState(() {});
   }
@@ -210,23 +223,46 @@ class _GameWidgetState extends State<GameWidget> {
   }
 
   void _performMove(bool Function() move) {
-    if (_isFinished || !move()) return;
+    if (_isFinished) return;
+    final previousScore = _game.score;
+    final previousGolden = _game.goldenHighest;
+    if (!move()) return;
     HapticFeedback.selectionClick();
     _moves++;
-    _saveGame();
-    checkGameOver();
-    if (widget.challenge.moveLimit != null &&
-        _moves >= widget.challenge.moveLimit!) {
-      _finish();
+    if (_game.goldenHighest > previousGolden) {
+      GameAudioService.instance.playEffect(GameSound.golden);
+    } else if (_game.score > previousScore) {
+      GameAudioService.instance.playEffect(GameSound.merge);
+    } else {
+      GameAudioService.instance.playEffect(GameSound.move);
     }
+    _saveGame();
+    _evaluateGame();
     setState(() {});
   }
 
-  void checkGameOver() {
+  void _evaluateGame() {
+    if (_goalMet) {
+      _finish(won: true);
+      return;
+    }
+    if (widget.challenge.moveLimit != null &&
+        _moves >= widget.challenge.moveLimit!) {
+      _finish(won: false);
+      return;
+    }
     if (_game.isGameOver()) {
+      if (widget.challenge.kind == ChallengeKind.zen) {
+        _game.reviveZen();
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(S.of(context).Zen_Revived)));
+        }
+        return;
+      }
       HapticFeedback.heavyImpact();
       setState(() => _isGameOver = true);
-      _finish();
+      _finish(won: false);
     }
   }
 
@@ -234,21 +270,26 @@ class _GameWidgetState extends State<GameWidget> {
     if (!mounted || _isFinished || (widget.paused?.value ?? false)) return;
     _elapsedSeconds++;
     final limit = widget.challenge.seconds;
-    if (limit != null && _elapsedSeconds >= limit) _finish();
+    if (limit != null && _elapsedSeconds >= limit) {
+      _finish(won: _goalMet);
+    }
     setState(() {});
   }
 
-  Future<void> _finish() async {
+  Future<void> _finish({required bool won}) async {
     if (_isFinished) return;
     _isFinished = true;
     _isGameOver = true;
+    _objectiveWon = won;
     await _store.clearSave();
     await _store.record(
         mode: widget.challenge.id,
         score: _game.score,
         moves: _moves,
         highestTile: _game.highestTile,
-        seconds: _elapsedSeconds);
+        seconds: _elapsedSeconds,
+        completed: won,
+        level: widget.challenge.level);
     final stats = await _store.stats();
     await GameCenterService().submit(
         mode: widget.challenge.id,
@@ -259,10 +300,29 @@ class _GameWidgetState extends State<GameWidget> {
     if (mounted) setState(() {});
   }
 
+  bool get _goalMet => switch (widget.challenge.goal) {
+        ChallengeGoal.endless => false,
+        ChallengeGoal.score =>
+          _game.score >= (widget.challenge.targetScore ?? 1 << 30),
+        ChallengeGoal.tile =>
+          _game.highestTile >= (widget.challenge.targetTile ?? 1 << 30),
+        ChallengeGoal.timedScore => widget.challenge.targetScore != null &&
+            _game.score >= widget.challenge.targetScore!,
+        ChallengeGoal.moveScore => widget.challenge.targetScore == null
+            ? widget.challenge.moveLimit != null &&
+                _moves >= widget.challenge.moveLimit!
+            : _game.score >= widget.challenge.targetScore!,
+        ChallengeGoal.goldenTile =>
+          _game.goldenHighest >= (widget.challenge.goldenTarget ?? 1 << 30),
+      };
+
   Future<void> _saveGame() => _store.save({
         'mode': widget.challenge.id,
         'moves': _moves,
         'elapsed': _elapsedSeconds,
+        'doubleUses': _doubleUses,
+        'hammerUses': _hammerUses,
+        'bombUses': _bombUses,
         'game': _game.toJson(),
       });
 
@@ -274,6 +334,9 @@ class _GameWidgetState extends State<GameWidget> {
     _game.restore(game);
     _moves = saved['moves'] as int? ?? 0;
     _elapsedSeconds = saved['elapsed'] as int? ?? 0;
+    _doubleUses = saved['doubleUses'] as int? ?? 2;
+    _hammerUses = saved['hammerUses'] as int? ?? 2;
+    _bombUses = saved['bombUses'] as int? ?? 1;
     setState(() {});
   }
 
@@ -286,8 +349,11 @@ class _GameWidgetState extends State<GameWidget> {
             ? max(constraints.maxWidth * .1, (constraints.maxWidth - 600) / 2)
             : AppSpacing.sm;
         final width = constraints.maxWidth - horizontal * 2;
-        final height = max(180.0, constraints.maxHeight - 154);
-        _boardExtent = min(width, height).clamp(180.0, 580.0);
+        final showsGoal = widget.challenge.kind != ChallengeKind.classic &&
+            widget.challenge.kind != ChallengeKind.zen;
+        final height =
+            max(150.0, constraints.maxHeight - (showsGoal ? 300 : 250));
+        _boardExtent = min(width, height).clamp(150.0, 580.0);
         return Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
@@ -304,19 +370,61 @@ class _GameWidgetState extends State<GameWidget> {
                   _metric(context, S.of(context).Time, _timeLabel),
                 ]),
           ),
+          if (showsGoal)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: widget.challenge.hasGolden
+                    ? const Color(0xffFFD75E).withValues(alpha: .22)
+                    : Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                border: widget.challenge.hasGolden
+                    ? Border.all(color: const Color(0xffD39C00))
+                    : null,
+              ),
+              child: Row(children: [
+                Icon(widget.challenge.hasGolden
+                    ? Icons.auto_awesome_rounded
+                    : Icons.flag_rounded),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                    child: Text(
+                        widget.challenge.localizedObjective(S.of(context)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge
+                            ?.copyWith(fontWeight: FontWeight.w900))),
+              ]),
+            ),
           Expanded(
               child: Center(
                   child: SizedBox.square(
             dimension: _boardExtent,
-            child: GestureDetector(
-              onVerticalDragUpdate: (detail) =>
-                  _drag(detail.delta, vertical: true),
-              onVerticalDragEnd: (_) => _isDragging = false,
-              onVerticalDragCancel: () => _isDragging = false,
-              onHorizontalDragUpdate: (detail) => _drag(detail.delta),
-              onHorizontalDragEnd: (_) => _isDragging = false,
-              onHorizontalDragCancel: () => _isDragging = false,
-              child: Stack(children: _boardChildren(context)),
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey(_shuffleVersion),
+              tween: Tween(begin: 0, end: 1),
+              duration: _shuffleVersion == 0
+                  ? Duration.zero
+                  : const Duration(milliseconds: 520),
+              curve: Curves.easeInOutCubic,
+              builder: (context, value, child) => Transform.rotate(
+                angle: sin(value * pi * 4) * .025 * (1 - value),
+                child: Transform.scale(
+                    scale: 1 - sin(value * pi).abs() * .035, child: child),
+              ),
+              child: GestureDetector(
+                onVerticalDragUpdate: (detail) =>
+                    _drag(detail.delta, vertical: true),
+                onVerticalDragEnd: (_) => _isDragging = false,
+                onVerticalDragCancel: () => _isDragging = false,
+                onHorizontalDragUpdate: (detail) => _drag(detail.delta),
+                onHorizontalDragEnd: (_) => _isDragging = false,
+                onHorizontalDragCancel: () => _isDragging = false,
+                child: Stack(children: _boardChildren(context)),
+              ),
             ),
           ))),
           Padding(
@@ -331,12 +439,35 @@ class _GameWidgetState extends State<GameWidget> {
                   label: S.of(context).Shuffle,
                   onPressed: () {
                     _game.shuffle();
+                    _shuffleVersion++;
+                    GameAudioService.instance.playEffect(GameSound.move);
+                    _saveGame();
                     setState(() {});
                   }),
               GameActionButton(
                   icon: Icons.refresh_rounded,
                   label: S.of(context).Restart,
                   onPressed: newGame),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: Row(children: [
+              GameActionButton(
+                  icon: Icons.exposure_plus_2_rounded,
+                  label: '${S.of(context).Double_Tool} · $_doubleUses',
+                  selected: _selectedTool == ToolKind.doubleTile,
+                  onPressed: () => _selectTool(ToolKind.doubleTile)),
+              GameActionButton(
+                  icon: Icons.hardware_rounded,
+                  label: '${S.of(context).Hammer_Tool} · $_hammerUses',
+                  selected: _selectedTool == ToolKind.hammer,
+                  onPressed: () => _selectTool(ToolKind.hammer)),
+              GameActionButton(
+                  icon: Icons.blur_circular_rounded,
+                  label: '${S.of(context).Bomb_Tool} · $_bombUses',
+                  selected: _selectedTool == ToolKind.bomb,
+                  onPressed: () => _selectTool(ToolKind.bomb)),
             ]),
           ),
           const AdBanner(margin: AppInsets.adContainerGame),
@@ -367,10 +498,14 @@ class _GameWidgetState extends State<GameWidget> {
             top: top,
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeInOut,
-            child: GameTile(
-              cell: cell,
-              tileSize: tileSize,
-              shadowOffset: shadowOffset,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _useTool(r, c),
+              child: GameTile(
+                cell: cell,
+                tileSize: tileSize,
+                shadowOffset: shadowOffset,
+              ),
             ),
           ),
         );
@@ -386,6 +521,9 @@ class _GameWidgetState extends State<GameWidget> {
         moves: _moves,
         highestTile: _game.highestTile,
         title: _resultTitle,
+        message: widget.challenge.goal == ChallengeGoal.endless
+            ? null
+            : widget.challenge.localizedObjective(S.of(context)),
         onShare: _shareResult,
         onRestart: newGame,
       ));
@@ -410,12 +548,26 @@ class _GameWidgetState extends State<GameWidget> {
     return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
   }
 
-  String get _resultTitle => widget.challenge.kind == ChallengeKind.sprint
-      ? S.of(context).Time_Up
-      : widget.challenge.moveLimit != null &&
-              _moves >= widget.challenge.moveLimit!
-          ? S.of(context).Challenge_Complete
-          : S.of(context).Game_Over;
+  String get _resultTitle {
+    if (_objectiveWon) {
+      return widget.challenge.kind == ChallengeKind.level
+          ? S.of(context).Level_Complete
+          : S.of(context).Challenge_Won;
+    }
+    if (widget.challenge.kind == ChallengeKind.level ||
+        widget.challenge.kind == ChallengeKind.objective) {
+      return S.of(context).Challenge_Failed;
+    }
+    if (widget.challenge.kind == ChallengeKind.sprint) {
+      return S.of(context).Time_Up;
+    }
+    if (widget.challenge.moveLimit != null &&
+        _moves >= widget.challenge.moveLimit!) {
+      return S.of(context).Challenge_Complete;
+    }
+    return S.of(context).Game_Over;
+  }
+
   void _shareResult() {
     final box = context.findRenderObject() as RenderBox?;
     SharePlus.instance.share(ShareParams(
@@ -449,10 +601,66 @@ class _GameWidgetState extends State<GameWidget> {
     if (moves.isNotEmpty) moves.first();
   }
 
+  void _selectTool(ToolKind tool) {
+    if (_isFinished) return;
+    final uses = switch (tool) {
+      ToolKind.doubleTile => _doubleUses,
+      ToolKind.hammer => _hammerUses,
+      ToolKind.bomb => _bombUses,
+    };
+    if (uses <= 0) {
+      GameAudioService.instance.playEffect(GameSound.error);
+      return;
+    }
+    _selectedTool = tool;
+    GameAudioService.instance.playEffect(GameSound.select);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+          duration: const Duration(seconds: 2),
+          content: Text(S.of(context).Select_Tile(_toolName(tool)))));
+    setState(() {});
+  }
+
+  void _useTool(int r, int c) {
+    final tool = _selectedTool;
+    if (tool == null || _isFinished) return;
+    final success = switch (tool) {
+      ToolKind.doubleTile => _game.doubleCell(r, c),
+      ToolKind.hammer => _game.hammerCell(r, c),
+      ToolKind.bomb => _game.bombCell(r, c),
+    };
+    if (!success) {
+      GameAudioService.instance.playEffect(GameSound.error);
+      return;
+    }
+    switch (tool) {
+      case ToolKind.doubleTile:
+        _doubleUses--;
+      case ToolKind.hammer:
+        _hammerUses--;
+      case ToolKind.bomb:
+        _bombUses--;
+    }
+    _selectedTool = null;
+    GameAudioService.instance.playEffect(GameSound.tool);
+    _saveGame();
+    _evaluateGame();
+    setState(() {});
+  }
+
+  String _toolName(ToolKind tool) => switch (tool) {
+        ToolKind.doubleTile => S.of(context).Double_Tool,
+        ToolKind.hammer => S.of(context).Hammer_Tool,
+        ToolKind.bomb => S.of(context).Bomb_Tool,
+      };
+
   Size boardSize() {
     return Size.square(_boardExtent);
   }
 }
+
+enum ToolKind { doubleTile, hammer, bomb }
 
 class GameTile extends StatefulWidget {
   final BoardCell cell;
@@ -470,9 +678,9 @@ class GameTile extends StatefulWidget {
   State<GameTile> createState() => _GameTileState();
 }
 
-class _GameTileState extends State<GameTile>
-    with SingleTickerProviderStateMixin {
+class _GameTileState extends State<GameTile> with TickerProviderStateMixin {
   late AnimationController _scaleController;
+  late AnimationController _goldController;
   late Animation<double> _scaleAnim;
   bool _playedNew = false;
 
@@ -486,6 +694,11 @@ class _GameTileState extends State<GameTile>
     _scaleAnim = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
     );
+    _goldController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    if (widget.cell.isGolden) _goldController.repeat();
 
     if (widget.cell.isNew) {
       _scaleController.forward();
@@ -505,11 +718,17 @@ class _GameTileState extends State<GameTile>
       widget.cell.isNew = false;
       _playedNew = true;
     }
+    if (widget.cell.isGolden && !_goldController.isAnimating) {
+      _goldController.repeat();
+    } else if (!widget.cell.isGolden && _goldController.isAnimating) {
+      _goldController.stop();
+    }
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
+    _goldController.dispose();
     super.dispose();
   }
 
@@ -517,23 +736,26 @@ class _GameTileState extends State<GameTile>
   Widget build(BuildContext context) {
     final number = widget.cell.number;
     return AnimatedBuilder(
-      animation: _scaleAnim,
-      builder: (context, child) => Transform.scale(
-        scale: _scaleAnim.value,
-        child: child,
-      ),
-      child: CellBox(
-        left: 0,
-        top: 0,
-        size: widget.tileSize,
-        color: tileColor(number),
-        shadowOffset: widget.shadowOffset,
-        text: Text(
-          number.toString(),
-          maxLines: 1,
-          style: tileTextStyle(context, number),
-        ),
-      ),
+      animation: Listenable.merge([_scaleAnim, _goldController]),
+      builder: (context, _) => Transform.scale(
+          scale: _scaleAnim.value *
+              (widget.cell.isGolden
+                  ? 1 + sin(_goldController.value * pi * 2) * .025
+                  : 1),
+          child: CellBox(
+            left: 0,
+            top: 0,
+            size: widget.tileSize,
+            color: tileColor(number),
+            shadowOffset: widget.shadowOffset,
+            isGolden: widget.cell.isGolden,
+            goldenProgress: _goldController.value,
+            text: Text(
+              number.toString(),
+              maxLines: 1,
+              style: tileTextStyle(context, number),
+            ),
+          )),
     );
   }
 }
@@ -545,6 +767,8 @@ class CellBox extends StatelessWidget {
   final Color color;
   final double shadowOffset;
   final Text? text;
+  final bool isGolden;
+  final double goldenProgress;
 
   const CellBox({
     super.key,
@@ -554,6 +778,8 @@ class CellBox extends StatelessWidget {
     required this.color,
     required this.shadowOffset,
     required this.text,
+    this.isGolden = false,
+    this.goldenProgress = 0,
   });
 
   @override
@@ -567,9 +793,28 @@ class CellBox extends StatelessWidget {
               height: size,
               padding: AppInsets.cellH5,
               decoration: BoxDecoration(
-                color: color,
+                color: isGolden ? null : color,
+                gradient: isGolden
+                    ? LinearGradient(
+                        begin: Alignment(-1 + goldenProgress * 2, -1),
+                        end: Alignment(1 + goldenProgress * 2, 1),
+                        colors: const [
+                          Color(0xffB97800),
+                          Color(0xffFFF1A6),
+                          Color(0xffFFD447),
+                          Color(0xff9D5B00),
+                        ],
+                      )
+                    : null,
                 borderRadius: AppRadii.tile,
                 boxShadow: [
+                  if (isGolden)
+                    BoxShadow(
+                      color: const Color(0xffFFD447)
+                          .withValues(alpha: .55 + goldenProgress * .2),
+                      blurRadius: 12 + goldenProgress * 8,
+                      spreadRadius: 1,
+                    ),
                   BoxShadow(
                       color: Theme.of(context)
                           .colorScheme
@@ -586,11 +831,19 @@ class CellBox extends StatelessWidget {
                       offset: Offset(shadowOffset, shadowOffset)),
                 ],
               ),
-              child: Center(
-                  child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.center,
-                      child: text)),
+              child: Stack(children: [
+                Center(
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: text)),
+                if (isGolden)
+                  const Positioned(
+                      right: 3,
+                      top: 3,
+                      child: Icon(Icons.auto_awesome_rounded,
+                          size: 14, color: Color(0xff6A3B00))),
+              ]),
             )
           : Container(
               width: size,
@@ -615,6 +868,7 @@ class GameOverOverlay extends StatelessWidget {
   final int moves;
   final int highestTile;
   final String title;
+  final String? message;
   final VoidCallback onRestart;
   final VoidCallback? onShare;
 
@@ -624,6 +878,7 @@ class GameOverOverlay extends StatelessWidget {
     this.moves = 0,
     this.highestTile = 0,
     this.title = 'Game Over',
+    this.message,
     required this.onRestart,
     this.onShare,
   });
@@ -656,7 +911,7 @@ class GameOverOverlay extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onInverseSurface)),
                 const SizedBox(height: 16),
-                Text(S.of(context).Game_Over_Message,
+                Text(message ?? S.of(context).Game_Over_Message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onInverseSurface)),

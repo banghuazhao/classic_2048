@@ -18,7 +18,9 @@ class ProgressStore {
       required int score,
       required int moves,
       required int highestTile,
-      required int seconds}) async {
+      required int seconds,
+      bool completed = false,
+      int? level}) async {
     final prefs = await SharedPreferences.getInstance();
     final data = await stats();
     data['games'] = (data['games'] as int? ?? 0) + 1;
@@ -32,6 +34,17 @@ class ProgressStore {
     data['best_$mode'] = score > (data['best_$mode'] as int? ?? 0)
         ? score
         : data['best_$mode'] ?? 0;
+    if (completed) {
+      final completedModes = List<String>.from(
+          data['completedModes'] as List<dynamic>? ?? const []);
+      if (!completedModes.contains(mode)) completedModes.add(mode);
+      data['completedModes'] = completedModes;
+      if (level != null) {
+        data['highestLevel'] = level > (data['highestLevel'] as int? ?? 0)
+            ? level
+            : data['highestLevel'] ?? 0;
+      }
+    }
     if (highestTile >= 2048) data['achievement2048'] = true;
     if (score >= 10000) data['achievement10k'] = true;
     if (highestTile >= 512 && moves <= 100) data['achievementEfficient'] = true;

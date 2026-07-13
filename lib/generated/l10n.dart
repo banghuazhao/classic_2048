@@ -583,6 +583,351 @@ class S {
       args: [score, mode, moves, tile],
     );
   }
+
+  /// `Levels`
+  String get Levels {
+    return Intl.message('Levels', name: 'Levels', desc: '', args: []);
+  }
+
+  /// `Zen`
+  String get Zen_Mode {
+    return Intl.message('Zen', name: 'Zen_Mode', desc: '', args: []);
+  }
+
+  /// `An endless board that clears space when stuck`
+  String get Zen_Subtitle {
+    return Intl.message(
+      'An endless board that clears space when stuck',
+      name: 'Zen_Subtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Challenges`
+  String get Challenges {
+    return Intl.message('Challenges', name: 'Challenges', desc: '', args: []);
+  }
+
+  /// `Settings`
+  String get Settings {
+    return Intl.message('Settings', name: 'Settings', desc: '', args: []);
+  }
+
+  /// `Background music`
+  String get Background_Music {
+    return Intl.message(
+      'Background music',
+      name: 'Background_Music',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Off`
+  String get Music_Off {
+    return Intl.message('Off', name: 'Music_Off', desc: '', args: []);
+  }
+
+  /// `Quiet Forest`
+  String get Music_Forest {
+    return Intl.message(
+      'Quiet Forest',
+      name: 'Music_Forest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Meditation Bowl`
+  String get Music_Meditation {
+    return Intl.message(
+      'Meditation Bowl',
+      name: 'Music_Meditation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Minstrel Journey`
+  String get Music_Medieval {
+    return Intl.message(
+      'Minstrel Journey',
+      name: 'Music_Medieval',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sound effects`
+  String get Sound_Effects {
+    return Intl.message(
+      'Sound effects',
+      name: 'Sound_Effects',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Easy`
+  String get Easy {
+    return Intl.message('Easy', name: 'Easy', desc: '', args: []);
+  }
+
+  /// `Medium`
+  String get Medium {
+    return Intl.message('Medium', name: 'Medium', desc: '', args: []);
+  }
+
+  /// `Hard`
+  String get Hard {
+    return Intl.message('Hard', name: 'Hard', desc: '', args: []);
+  }
+
+  /// `Golden`
+  String get Golden {
+    return Intl.message('Golden', name: 'Golden', desc: '', args: []);
+  }
+
+  /// `Level {number}`
+  String Level_Number(Object number) {
+    return Intl.message(
+      'Level $number',
+      name: 'Level_Number',
+      desc: '',
+      args: [number],
+    );
+  }
+
+  /// `Locked`
+  String get Locked {
+    return Intl.message('Locked', name: 'Locked', desc: '', args: []);
+  }
+
+  /// `Completed`
+  String get Completed {
+    return Intl.message('Completed', name: 'Completed', desc: '', args: []);
+  }
+
+  /// `Goal`
+  String get Goal {
+    return Intl.message('Goal', name: 'Goal', desc: '', args: []);
+  }
+
+  /// `Play without limits`
+  String get Objective_Endless {
+    return Intl.message(
+      'Play without limits',
+      name: 'Objective_Endless',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reach {score} points`
+  String Objective_Score(Object score) {
+    return Intl.message(
+      'Reach $score points',
+      name: 'Objective_Score',
+      desc: '',
+      args: [score],
+    );
+  }
+
+  /// `Create a {tile} tile`
+  String Objective_Tile(Object tile) {
+    return Intl.message(
+      'Create a $tile tile',
+      name: 'Objective_Tile',
+      desc: '',
+      args: [tile],
+    );
+  }
+
+  /// `Play for {seconds} seconds`
+  String Objective_Time(Object seconds) {
+    return Intl.message(
+      'Play for $seconds seconds',
+      name: 'Objective_Time',
+      desc: '',
+      args: [seconds],
+    );
+  }
+
+  /// `Score {score} in {seconds} seconds`
+  String Objective_Timed_Score(Object score, Object seconds) {
+    return Intl.message(
+      'Score $score in $seconds seconds',
+      name: 'Objective_Timed_Score',
+      desc: '',
+      args: [score, seconds],
+    );
+  }
+
+  /// `Play {moves} moves`
+  String Objective_Moves(Object moves) {
+    return Intl.message(
+      'Play $moves moves',
+      name: 'Objective_Moves',
+      desc: '',
+      args: [moves],
+    );
+  }
+
+  /// `Score {score} within {moves} moves`
+  String Objective_Move_Score(Object score, Object moves) {
+    return Intl.message(
+      'Score $score within $moves moves',
+      name: 'Objective_Move_Score',
+      desc: '',
+      args: [score, moves],
+    );
+  }
+
+  /// `Merge the golden tile to {tile} or higher`
+  String Objective_Golden(Object tile) {
+    return Intl.message(
+      'Merge the golden tile to $tile or higher',
+      name: 'Objective_Golden',
+      desc: '',
+      args: [tile],
+    );
+  }
+
+  /// `Score`
+  String get Score_Goal {
+    return Intl.message('Score', name: 'Score_Goal', desc: '', args: []);
+  }
+
+  /// `Tile`
+  String get Tile_Goal {
+    return Intl.message('Tile', name: 'Tile_Goal', desc: '', args: []);
+  }
+
+  /// `Speed`
+  String get Speed_Goal {
+    return Intl.message('Speed', name: 'Speed_Goal', desc: '', args: []);
+  }
+
+  /// `Moves`
+  String get Move_Goal {
+    return Intl.message('Moves', name: 'Move_Goal', desc: '', args: []);
+  }
+
+  /// `Golden tile`
+  String get Golden_Goal {
+    return Intl.message('Golden tile', name: 'Golden_Goal', desc: '', args: []);
+  }
+
+  /// `Level Complete`
+  String get Level_Complete {
+    return Intl.message(
+      'Level Complete',
+      name: 'Level_Complete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Challenge Complete`
+  String get Challenge_Won {
+    return Intl.message(
+      'Challenge Complete',
+      name: 'Challenge_Won',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Challenge Failed`
+  String get Challenge_Failed {
+    return Intl.message(
+      'Challenge Failed',
+      name: 'Challenge_Failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tools`
+  String get Tools {
+    return Intl.message('Tools', name: 'Tools', desc: '', args: []);
+  }
+
+  /// `Double`
+  String get Double_Tool {
+    return Intl.message('Double', name: 'Double_Tool', desc: '', args: []);
+  }
+
+  /// `Hammer`
+  String get Hammer_Tool {
+    return Intl.message('Hammer', name: 'Hammer_Tool', desc: '', args: []);
+  }
+
+  /// `3×3 Bomb`
+  String get Bomb_Tool {
+    return Intl.message('3×3 Bomb', name: 'Bomb_Tool', desc: '', args: []);
+  }
+
+  /// `Select a tile to use {tool}`
+  String Select_Tile(Object tool) {
+    return Intl.message(
+      'Select a tile to use $tool',
+      name: 'Select_Tile',
+      desc: '',
+      args: [tool],
+    );
+  }
+
+  /// `{count} left`
+  String Uses_Left(Object count) {
+    return Intl.message(
+      '$count left',
+      name: 'Uses_Left',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `The glowing golden tile triples when merged. Build it to the marked target.`
+  String get Golden_Help {
+    return Intl.message(
+      'The glowing golden tile triples when merged. Build it to the marked target.',
+      name: 'Golden_Help',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Zen cleared space so you can keep playing.`
+  String get Zen_Revived {
+    return Intl.message(
+      'Zen cleared space so you can keep playing.',
+      name: 'Zen_Revived',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `10 levels · easy to expert`
+  String get All_Levels {
+    return Intl.message(
+      '10 levels · easy to expert',
+      name: 'All_Levels',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `3 easy · 3 medium · 3 hard`
+  String get Challenge_Count {
+    return Intl.message(
+      '3 easy · 3 medium · 3 hard',
+      name: 'Challenge_Count',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

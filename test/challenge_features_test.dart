@@ -17,6 +17,60 @@ void main() {
     expect(morning.seed, evening.seed);
   });
 
+  test('catalog includes ten levels and three challenges per difficulty', () {
+    expect(ChallengeConfig.levels, hasLength(10));
+    expect(ChallengeConfig.challenges, hasLength(9));
+    for (final difficulty in ChallengeDifficulty.values) {
+      expect(
+          ChallengeConfig.challenges
+              .where((challenge) => challenge.difficulty == difficulty),
+          hasLength(3));
+    }
+    expect(
+        ChallengeConfig.levels.where((level) => level.hasGolden), hasLength(3));
+  });
+
+  test('golden tile triples and tracks its merged value', () {
+    final game = Game(4, 4, 1, goldenEnabled: true)..init();
+    game.restore({
+      'score': 0,
+      'goldenHighest': 0,
+      'board': List.generate(
+          4,
+          (r) => List.generate(
+              4,
+              (c) => {
+                    'number': r == 0 && c < 2 ? 2 : 0,
+                    'golden': r == 0 && c == 0,
+                  })),
+    });
+    expect(game.moveLeft(), isTrue);
+    expect(game.get(0, 0).number, 6);
+    expect(game.get(0, 0).isGolden, isTrue);
+    expect(game.goldenHighest, 6);
+  });
+
+  test('double, hammer, and bomb tools mutate the selected area', () {
+    final game = Game(4, 4, 1)..init();
+    game.restore({
+      'score': 0,
+      'board': List.generate(
+          4,
+          (r) => List.generate(
+              4,
+              (c) => {
+                    'number': r < 2 && c < 2 ? 2 : 0,
+                    'golden': false,
+                  })),
+    });
+    expect(game.doubleCell(0, 0), isTrue);
+    expect(game.get(0, 0).number, 4);
+    expect(game.hammerCell(0, 1), isTrue);
+    expect(game.get(0, 1).number, 0);
+    expect(game.bombCell(1, 1), isTrue);
+    expect(game.get(1, 1).number, 8);
+  });
+
   test('seeded games produce the same board sequence', () {
     final first = Game(4, 4, 1, seed: 42)..init();
     final second = Game(4, 4, 1, seed: 42)..init();
@@ -47,6 +101,22 @@ void main() {
     expect(stats['achievement2048'], isTrue);
     expect(stats['achievement10k'], isTrue);
     expect(stats['achievementEfficient'], isTrue);
+  });
+
+  test('completed level persists unlock progress', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ProgressStore();
+    await store.record(
+        mode: 'level-3',
+        score: 1200,
+        moves: 60,
+        highestTile: 128,
+        seconds: 90,
+        completed: true,
+        level: 3);
+    final stats = await store.stats();
+    expect(stats['highestLevel'], 3);
+    expect(stats['completedModes'], contains('level-3'));
   });
 
   test('daily completion records history and streak', () async {

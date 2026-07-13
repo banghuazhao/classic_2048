@@ -7,12 +7,14 @@ class GameActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
+  final bool selected;
 
   const GameActionButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.selected = false,
   });
 
   @override
@@ -21,28 +23,40 @@ class GameActionButton extends StatelessWidget {
     return Expanded(
       child: Semantics(
         button: true,
+        selected: selected,
         label: label,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.control),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onPressed();
-          },
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 58),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: game.accent),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: game.accent, fontWeight: FontWeight.w700)),
-                ],
+        child: Ink(
+          decoration: BoxDecoration(
+            color: selected ? game.accent.withValues(alpha: .16) : null,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            border: selected ? Border.all(color: game.accent) : null,
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onPressed();
+            },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 58),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: game.accent),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelMedium
+                            ?.copyWith(
+                                color: game.accent,
+                                fontWeight: FontWeight.w700)),
+                  ],
+                ),
               ),
             ),
           ),

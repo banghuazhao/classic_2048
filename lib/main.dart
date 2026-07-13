@@ -5,12 +5,15 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/ad_config.dart';
+import 'audio_service.dart';
 import 'challenge.dart';
 import 'game_page.dart';
 import 'game_center_service.dart';
 import 'generated/l10n.dart';
 import 'onboarding.dart';
+import 'mode_catalog.dart';
 import 'progress_store.dart';
+import 'settings_sheet.dart';
 import 'theme/app_theme.dart';
 import 'util/ads_manager.dart';
 import 'widgets/ad_banner.dart';
@@ -70,6 +73,7 @@ class _LaunchGateState extends State<LaunchGate> {
       }
     });
     GameCenterService().signIn();
+    GameAudioService.instance.initialize();
   }
 
   @override
@@ -123,49 +127,32 @@ class _GameChooseState extends State<GameChoose> {
               child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
                   children: [
-                    Text(S.of(context).App_Name,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayLarge
-                            ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onInverseSurface)),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(S.of(context).Choose_Mode,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onInverseSurface)),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(S.of(context).Home_Description,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onInverseSurface
-                                .withValues(alpha: .86))),
-                    const SizedBox(height: AppSpacing.xl),
+                    Row(children: [
+                      Expanded(
+                        child: Text(S.of(context).App_Name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayMedium
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onInverseSurface,
+                                    fontWeight: FontWeight.w900)),
+                      ),
+                      IconButton.filledTonal(
+                        tooltip: S.of(context).Settings,
+                        onPressed: () => SettingsSheet.show(context),
+                        icon: const Icon(Icons.settings_rounded),
+                      ),
+                    ]),
+                    const SizedBox(height: AppSpacing.lg),
                     _section(context, S.of(context).Today),
                     _challenge(context, ChallengeConfig.daily(DateTime.now()),
                         Icons.calendar_today_rounded),
-                    _section(context, S.of(context).Challenge_Modes),
-                    _challenge(context, const ChallengeConfig.sprint(180),
-                        Icons.timer_rounded),
-                    _challenge(context, const ChallengeConfig.moveLimit(100),
-                        Icons.route_rounded),
+                    const SizedBox(height: AppSpacing.sm),
+                    _featureGrid(context),
                     _section(context, S.of(context).Classic_Boards),
-                    _mode(context, 4, 1, 'bg1', S.of(context).Mode_4_1,
-                        Icons.auto_awesome_rounded),
-                    _mode(context, 5, 1, 'bg2', S.of(context).Mode_5_1),
-                    _mode(context, 5, 2, 'bg3', S.of(context).Mode_5_2),
-                    _mode(context, 6, 2, 'bg4', S.of(context).Mode_6_2),
-                    _mode(context, 6, 3, 'bg5', S.of(context).Mode_6_3),
+                    _classicGrid(context),
                     const SizedBox(height: AppSpacing.sm),
                     OutlinedButton.icon(
                         onPressed: () => _showStats(context),
@@ -200,6 +187,128 @@ class _GameChooseState extends State<GameChoose> {
                     builder: (_) => GamePage(
                         row: 4, newNum: 1, bg: 'bg1', challenge: challenge))),
           ));
+
+  Widget _featureGrid(BuildContext context) {
+    final s = S.of(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 520 ? 3 : 2;
+      final width =
+          (constraints.maxWidth - (columns - 1) * AppSpacing.sm) / columns;
+      return Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: [
+          _featureCard(context,
+              width: width,
+              title: s.Levels,
+              subtitle: s.All_Levels,
+              icon: Icons.stairs_rounded,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ModeCatalogPage.levels()))),
+          _featureCard(context,
+              width: width,
+              title: s.Zen_Mode,
+              subtitle: s.Zen_Subtitle,
+              icon: Icons.all_inclusive_rounded,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const GamePage(
+                          row: 4,
+                          newNum: 1,
+                          bg: 'bg2',
+                          challenge: ChallengeConfig.zen())))),
+          _featureCard(context,
+              width: width,
+              title: s.Challenges,
+              subtitle: s.Challenge_Count,
+              icon: Icons.emoji_events_rounded,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ModeCatalogPage.challenges()))),
+        ],
+      );
+    });
+  }
+
+  Widget _featureCard(BuildContext context,
+          {required double width,
+          required String title,
+          required String subtitle,
+          required IconData icon,
+          required VoidCallback onTap}) =>
+      SizedBox(
+        width: width,
+        height: 150,
+        child: Card(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: .92),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: Theme.of(context).colorScheme.primary),
+                  const Spacer(),
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _classicGrid(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 520 ? 3 : 2;
+        final modes = const [
+          (4, 1, 'bg1'),
+          (5, 1, 'bg2'),
+          (5, 2, 'bg3'),
+          (6, 2, 'bg4'),
+          (6, 3, 'bg5'),
+        ];
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: modes.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            childAspectRatio: 1.7,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+          ),
+          itemBuilder: (context, index) {
+            final mode = modes[index];
+            return FilledButton.tonalIcon(
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => GamePage(
+                          row: mode.$1, newNum: mode.$2, bg: mode.$3))),
+              icon: const Icon(Icons.grid_view_rounded),
+              label: Text('${mode.$1} × ${mode.$1}',
+                  style: const TextStyle(fontWeight: FontWeight.w900)),
+            );
+          },
+        );
+      });
 
   Future<void> _showStats(BuildContext context) async {
     final stats = await ProgressStore().stats();
@@ -261,19 +370,4 @@ class _GameChooseState extends State<GameChoose> {
                   ]),
             )));
   }
-
-  Widget _mode(
-          BuildContext context, int row, int count, String bg, String subtitle,
-          [IconData? icon]) =>
-      Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: PrimaryButton(
-            text: '$row × $row',
-            subtitle: subtitle,
-            icon: icon,
-            onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => GamePage(row: row, newNum: count, bg: bg))),
-          ));
 }
